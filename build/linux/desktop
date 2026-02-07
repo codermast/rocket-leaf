@@ -1,0 +1,13 @@
+[Desktop Entry]
+Version=1.0
+Name=My Product
+Comment=A rocket-leaf application
+# The Exec line includes %u to pass the URL to the application
+Exec=/usr/local/bin/rocket-leaf %u
+Terminal=false
+Type=Application
+Icon=rocket-leaf
+Categories=Utility;
+StartupWMClass=rocket-leaf
+
+ 
