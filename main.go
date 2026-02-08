@@ -57,7 +57,6 @@ func main() {
 		Title: "Rocket Leaf",
 		Mac: application.MacWindow{
 			InvisibleTitleBarHeight: 30,
-			Backdrop:                application.MacBackdropTranslucent,
 			TitleBar: application.MacTitleBar{
 				Hide:               false,
 				HideTitle:          true,
@@ -68,7 +67,7 @@ func main() {
 		Windows: application.WindowsWindow{
 			DisableFramelessWindowDecorations: true, // 启用无边框窗口装饰
 		},
-		BackgroundColour: application.NewRGB(245, 245, 245), // 浅色背景
+		BackgroundColour: application.NewRGBA(0, 0, 0, 0), // 将背景色设为全透明
 		URL:              "/",
 	})
 

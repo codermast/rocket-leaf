@@ -1,7 +1,7 @@
 /* Reset and Base Styles */
 :root {
   --titlebar-height: 30px;
-  --bg-color: #f5f5f5;
+  --bg-color: #ffffff;
   --text-color: #333333;
   --titlebar-bg: rgba(255, 255, 255, 0.8);
 }
