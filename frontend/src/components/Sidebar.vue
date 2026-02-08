@@ -1,8 +1,9 @@
 <script setup lang="ts">
 // Sidebar.vue
 // 使用 Naive UI 和 Ionicons5 图标构建的左侧边栏
-import { ref, h, Component, computed } from 'vue'
-import { NMenu, NIcon, NLayoutSider, NTooltip, NPopover, NDivider } from 'naive-ui'
+import { ref, h, computed } from 'vue'
+import type { Component } from 'vue'
+import { NMenu, NIcon, NLayoutSider, NTooltip, NPopover } from 'naive-ui'
 import type { MenuOption } from 'naive-ui'
 import {
     SpeedometerOutline,
@@ -56,6 +57,13 @@ interface Instance {
     status: 'online' | 'offline'  // 连接状态
 }
 
+const fallbackInstance: Instance = {
+    label: '未连接实例',
+    value: 'fallback',
+    ip: '-',
+    status: 'offline'
+}
+
 const instances = ref<Instance[]>([
     { label: '生产环境', value: 'prod', ip: '192.168.1.100:9876', status: 'online' },
     { label: '测试环境', value: 'test', ip: '192.168.1.101:9876', status: 'online' },
@@ -66,8 +74,8 @@ const instances = ref<Instance[]>([
 const selectedInstance = ref<string>('prod')
 
 // 获取当前选中实例的信息
-const currentInstance = computed(() => {
-    return instances.value.find(i => i.value === selectedInstance.value) || instances.value[0]
+const currentInstance = computed<Instance>(() => {
+    return instances.value.find(i => i.value === selectedInstance.value) ?? instances.value[0] ?? fallbackInstance
 })
 
 // 选择实例
@@ -125,6 +133,7 @@ const openGithub = () => {
 // 定义事件
 const emit = defineEmits<{
     (e: 'update:currentPage', key: string): void
+    (e: 'open:settings'): void
 }>()
 
 // 处理菜单选择
@@ -132,6 +141,10 @@ const handleSelect = (key: string) => {
     activeKey.value = key
     emit('update:currentPage', key)
     console.log('Selected:', key)
+}
+
+const openSettings = () => {
+    emit('open:settings')
 }
 </script>
 
@@ -146,7 +159,7 @@ const handleSelect = (key: string) => {
                     <div class="instance-card" :class="{ collapsed }">
                         <!-- 折叠状态：只显示图标 -->
                         <template v-if="collapsed">
-                            <n-tooltip placement="right" :show-arrow="false" raw :content-style="tooltipContentStyle">
+                            <n-tooltip placement="right" :show-arrow="true">
                                 <template #trigger>
                                     <div class="instance-card-icon-only">
                                         <n-icon :size="20">
@@ -155,13 +168,8 @@ const handleSelect = (key: string) => {
                                         <span class="status-dot collapsed-dot" :class="currentInstance.status"></span>
                                     </div>
                                 </template>
-                                <div class="tooltip-panel instance-tooltip">
-                                    <div class="instance-tooltip-name">
-                                        <span class="status-dot inline" :class="currentInstance.status"></span>
-                                        <span>{{ currentInstance.label }}</span>
-                                    </div>
-                                    <div class="instance-tooltip-ip">{{ currentInstance.ip }}</div>
-                                </div>
+                                <div>{{ currentInstance.label }}</div>
+                                <div>{{ currentInstance.ip }}</div>
                             </n-tooltip>
                         </template>
 
@@ -243,8 +251,7 @@ const handleSelect = (key: string) => {
             <!-- 设置 -->
             <n-tooltip v-if="collapsed" placement="right">
                 <template #trigger>
-                    <div class="footer-item" @click="handleSelect('settings')"
-                        :class="{ active: activeKey === 'settings' }">
+                    <div class="footer-item" @click="openSettings">
                         <div class="footer-icon">
                             <n-icon :size="20">
                                 <SettingsOutline />
@@ -254,8 +261,7 @@ const handleSelect = (key: string) => {
                 </template>
                 设置
             </n-tooltip>
-            <div v-else class="footer-item" @click="handleSelect('settings')"
-                :class="{ active: activeKey === 'settings' }">
+            <div v-else class="footer-item" @click="openSettings">
                 <div class="footer-icon">
                     <n-icon :size="20">
                         <SettingsOutline />
@@ -376,17 +382,18 @@ const handleSelect = (key: string) => {
     align-items: center;
     justify-content: center;
     border-radius: 8px;
-    background: #18a058;
+    background: linear-gradient(135deg, #22c372 0%, #18a058 100%);
     color: white;
     flex-shrink: 0;
-    transition: transform 0.15s ease, box-shadow 0.15s ease, background 0.15s ease;
+    box-shadow: 0 4px 10px rgba(24, 160, 88, 0.24);
+    transition: transform 0.2s cubic-bezier(.4, 0, .2, 1), box-shadow 0.2s cubic-bezier(.4, 0, .2, 1), filter 0.2s ease;
     z-index: 1;
 }
 
 .instance-card.collapsed:hover .instance-card-icon-only {
-    transform: none;
-    box-shadow: none;
-    background: #18a058;
+    transform: translateY(-1px);
+    box-shadow: 0 8px 18px rgba(24, 160, 88, 0.3);
+    filter: saturate(1.06) brightness(1.03);
 }
 
 .rocketmq-icon {
@@ -412,9 +419,24 @@ const handleSelect = (key: string) => {
     align-items: center;
     justify-content: center;
     border-radius: 8px;
-    background: #18a058;
+    background: linear-gradient(135deg, #22c372 0%, #18a058 100%);
     color: white;
     flex-shrink: 0;
+    box-shadow: 0 4px 10px rgba(24, 160, 88, 0.2);
+    transition: transform 0.2s cubic-bezier(.4, 0, .2, 1), box-shadow 0.2s cubic-bezier(.4, 0, .2, 1), filter 0.2s ease;
+}
+
+.instance-card:hover .instance-card-icon {
+    transform: translateY(-1px);
+    box-shadow: 0 8px 18px rgba(24, 160, 88, 0.26);
+    filter: saturate(1.06) brightness(1.03);
+}
+
+.instance-card:active .instance-card-icon,
+.instance-card:active .instance-card-icon-only {
+    transform: translateY(0);
+    box-shadow: 0 3px 8px rgba(24, 160, 88, 0.2);
+    filter: none;
 }
 
 .instance-card-info {
@@ -517,9 +539,44 @@ const handleSelect = (key: string) => {
 }
 
 /* 折叠状态下居中对齐 */
+.sidebar-footer.collapsed {
+    padding: 6px 0 8px;
+}
+
 .sidebar-footer.collapsed .footer-item {
+    position: relative;
     justify-content: center;
-    padding: 10px;
+    padding: 0;
+    height: var(--menu-item-height, 42px);
+    margin: 0;
+    border-radius: 0;
+    background: transparent;
+}
+
+.sidebar-footer.collapsed .footer-item:hover {
+    background: transparent;
+}
+
+.sidebar-footer.collapsed .footer-item::before {
+    content: '';
+    position: absolute;
+    left: 8px;
+    right: 8px;
+    top: 0;
+    bottom: 0;
+    border-radius: var(--menu-item-radius, 3px);
+    background: transparent;
+    transition: background-color 0.3s var(--menu-item-bezier, cubic-bezier(.4, 0, .2, 1));
+    pointer-events: none;
+}
+
+.sidebar-footer.collapsed .footer-item:hover::before,
+.sidebar-footer.collapsed .footer-item.active::before {
+    background: var(--menu-item-hover-bg, #f3f3f5);
+}
+
+.sidebar-footer.collapsed .footer-icon {
+    z-index: 1;
 }
 
 .footer-icon {
@@ -541,6 +598,10 @@ const handleSelect = (key: string) => {
 }
 
 .github-item {
+    margin-top: 4px;
+}
+
+.sidebar-footer.collapsed .github-item {
     margin-top: 4px;
 }
 
@@ -580,29 +641,8 @@ const handleSelect = (key: string) => {
     color: var(--text-color, #333);
     border: 1px solid var(--border-color, rgba(0, 0, 0, 0.06));
     box-shadow: var(--popover-shadow, 0 8px 24px rgba(0, 0, 0, 0.12));
-    border-radius: 8px;
+    border-radius: 10px;
     padding: 8px 10px;
-}
-
-.instance-tooltip {
-    padding: 4px 2px;
-}
-
-.instance-tooltip-name {
-    display: flex;
-    align-items: center;
-    gap: 6px;
-    font-size: 13px;
-    font-weight: 600;
-    color: var(--text-color, #333);
-}
-
-.instance-tooltip-ip {
-    margin-top: 2px;
-    font-size: 12px;
-    color: var(--text-muted, #888);
-    font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
-    letter-spacing: 0.2px;
 }
 
 .popover-header {
