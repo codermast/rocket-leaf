@@ -8,7 +8,6 @@ import {
     NotificationsOutline,
     MoonOutline,
     SunnyOutline,
-    HomeOutline,
     SpeedometerOutline,
     LinkOutline,
     FolderOutline,
@@ -66,14 +65,6 @@ const getPageIcon = (key: string) => {
         <!-- 左侧：面包屑 / 当前页面名称 -->
         <div class="topbar-left">
             <n-breadcrumb>
-                <n-breadcrumb-item>
-                    <span class="breadcrumb-item">
-                        <n-icon :size="16">
-                            <HomeOutline />
-                        </n-icon>
-                        <span>首页</span>
-                    </span>
-                </n-breadcrumb-item>
                 <n-breadcrumb-item>
                     <span class="breadcrumb-item">
                         <n-icon :size="16">
