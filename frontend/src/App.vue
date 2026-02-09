@@ -9,6 +9,7 @@ import ConnectionManagement from './components/ConnectionManagement.vue'
 import TopicManagement from './components/TopicManagement.vue'
 import ConsumerGroupManagement from './components/ConsumerGroupManagement.vue'
 import MessageQuery from './components/MessageQuery.vue'
+import ClusterStatus from './components/ClusterStatus.vue'
 
 // 当前选中的页面
 const currentPage = ref('dashboard')
@@ -72,6 +73,7 @@ watchEffect(() => {
               <TopicManagement v-else-if="currentPage === 'topics'" />
               <ConsumerGroupManagement v-else-if="currentPage === 'consumer-groups'" />
               <MessageQuery v-else-if="currentPage === 'messages'" />
+              <ClusterStatus v-else-if="currentPage === 'cluster'" />
               <div v-else class="placeholder">
                 <h1>功能开发中</h1>
                 <p>当前页面：{{ currentPage }}</p>
