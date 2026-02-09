@@ -1,7 +1,6 @@
 <script setup lang="ts">
-import { computed, h, ref } from 'vue'
+import { computed, h, onMounted, onUnmounted, ref, watch } from 'vue'
 import {
-  NAlert,
   NButton,
   NCard,
   NDataTable,
@@ -46,7 +45,18 @@ interface MessageItem {
   properties: Record<string, string>
 }
 
+interface TopicSeed {
+  cluster: string
+  topic: string
+  tags: string[]
+  producerGroup: string
+  storeHost: string
+  bornHost: string
+}
+
 const message = useMessage()
+
+const AUTO_REFRESH_MS = 5000
 
 const clusterOptions = [
   { label: '生产集群', value: '生产集群' },
@@ -59,6 +69,107 @@ const statusOptions = [
   { label: '重试中', value: 'retry' },
   { label: '死信', value: 'dlq' }
 ]
+
+const topicSeedList: TopicSeed[] = [
+  {
+    cluster: '生产集群',
+    topic: 'order_event',
+    tags: ['order.created', 'order.updated', 'order.cancelled'],
+    producerGroup: 'order_producer_group',
+    storeHost: '10.10.1.21:10911',
+    bornHost: '10.20.3.15:52931'
+  },
+  {
+    cluster: '生产集群',
+    topic: 'payment_result',
+    tags: ['payment.success', 'payment.failed'],
+    producerGroup: 'payment_producer_group',
+    storeHost: '10.10.1.22:10911',
+    bornHost: '10.20.2.11:48620'
+  },
+  {
+    cluster: '测试集群',
+    topic: 'notify_event',
+    tags: ['sms', 'email', 'app'],
+    producerGroup: 'notify_producer_group',
+    storeHost: '10.11.0.13:10911',
+    bornHost: '10.31.1.9:40892'
+  },
+  {
+    cluster: '开发集群',
+    topic: 'dev_test_topic',
+    tags: ['debug', 'mock', 'integration'],
+    producerGroup: 'dev_producer_group',
+    storeHost: '127.0.0.1:10911',
+    bornHost: '127.0.0.1:56123'
+  }
+]
+
+const pad2 = (value: number) => String(value).padStart(2, '0')
+
+const formatDateTime = (date: Date) => {
+  const y = date.getFullYear()
+  const m = pad2(date.getMonth() + 1)
+  const d = pad2(date.getDate())
+  const hh = pad2(date.getHours())
+  const mm = pad2(date.getMinutes())
+  const ss = pad2(date.getSeconds())
+  return `${y}-${m}-${d} ${hh}:${mm}:${ss}`
+}
+
+const randomInt = (min: number, max: number) => {
+  return Math.floor(Math.random() * (max - min + 1)) + min
+}
+
+const pickOne = <T>(items: T[]): T => {
+  if (!items.length) {
+    throw new Error('无可用选项')
+  }
+  return items[randomInt(0, items.length - 1)] as T
+}
+
+const randomHex = (length: number) => {
+  const chars = '0123456789ABCDEF'
+  return Array.from({ length }, () => chars[randomInt(0, chars.length - 1)]).join('')
+}
+
+const generateMessageId = () => {
+  const timeHex = Date.now().toString(16).toUpperCase().slice(-10).padStart(10, '0')
+  return `0A0A0A01E5A3${timeHex}${randomHex(6)}`
+}
+
+const createAutoMessage = (id: number): MessageItem => {
+  const seed = pickOne(topicSeedList)
+  const roll = Math.random()
+  const status: MessageStatus = roll < 0.72 ? 'normal' : roll < 0.92 ? 'retry' : 'dlq'
+  const retryTimes = status === 'normal' ? 0 : (status === 'retry' ? randomInt(1, 6) : 16)
+  const ts = Date.now() - randomInt(0, 70) * 1000
+  const key = `AUTO_${seed.topic.toUpperCase()}_${id}`
+
+  return {
+    id,
+    cluster: seed.cluster,
+    topic: seed.topic,
+    messageId: generateMessageId(),
+    tags: pickOne(seed.tags),
+    keys: key,
+    producerGroup: seed.producerGroup,
+    queueId: randomInt(0, 3),
+    queueOffset: randomInt(1200, 220000),
+    storeHost: seed.storeHost,
+    bornHost: seed.bornHost,
+    storeTime: formatDateTime(new Date(ts)),
+    storeTimestamp: ts,
+    status,
+    retryTimes,
+    body: JSON.stringify({ traceId: `trace_${id}`, source: 'auto-refresh', payload: `message ${id}` }),
+    properties: {
+      SOURCE: 'auto-refresh',
+      TRACE_ON: String(Math.random() > 0.35),
+      REGION: seed.cluster === '生产集群' ? 'cn-hz' : 'local'
+    }
+  }
+}
 
 const messageList = ref<MessageItem[]>([
   {
@@ -78,11 +189,7 @@ const messageList = ref<MessageItem[]>([
     status: 'normal',
     retryTimes: 0,
     body: '{"orderId":10001,"amount":199.00,"status":"CREATED"}',
-    properties: {
-      UNIQ_KEY: 'ORDER_20260209_10001',
-      CLUSTER: 'PROD',
-      TRACE_ON: 'true'
-    }
+    properties: { UNIQ_KEY: 'ORDER_20260209_10001', CLUSTER: 'PROD', TRACE_ON: 'true' }
   },
   {
     id: 2,
@@ -101,11 +208,7 @@ const messageList = ref<MessageItem[]>([
     status: 'retry',
     retryTimes: 2,
     body: '{"paymentId":55661,"orderId":10001,"result":"SUCCESS"}',
-    properties: {
-      RETRY_TOPIC: '%RETRY%payment_group',
-      MAX_RECONSUME_TIMES: '16',
-      REGION: 'cn-hz'
-    }
+    properties: { RETRY_TOPIC: '%RETRY%payment_group', MAX_RECONSUME_TIMES: '16', REGION: 'cn-hz' }
   },
   {
     id: 3,
@@ -124,10 +227,7 @@ const messageList = ref<MessageItem[]>([
     status: 'normal',
     retryTimes: 0,
     body: '{"channel":"sms","phone":"138****8899","template":"login_code"}',
-    properties: {
-      SHARDING_KEY: 'sms_01',
-      DELAY_LEVEL: '0'
-    }
+    properties: { SHARDING_KEY: 'sms_01', DELAY_LEVEL: '0' }
   },
   {
     id: 4,
@@ -146,11 +246,7 @@ const messageList = ref<MessageItem[]>([
     status: 'dlq',
     retryTimes: 16,
     body: '{"channel":"email","to":"dev@example.com","template":"welcome"}',
-    properties: {
-      RETRY_TOPIC: '%RETRY%notify_group',
-      DEAD_LETTER_QUEUE: '%DLQ%notify_group',
-      BORN_TIMESTAMP: '1739088510000'
-    }
+    properties: { RETRY_TOPIC: '%RETRY%notify_group', DEAD_LETTER_QUEUE: '%DLQ%notify_group' }
   },
   {
     id: 5,
@@ -169,10 +265,7 @@ const messageList = ref<MessageItem[]>([
     status: 'normal',
     retryTimes: 0,
     body: '{"scene":"debug","payload":"hello rocket leaf"}',
-    properties: {
-      TRACE_ON: 'false',
-      REGION: 'local'
-    }
+    properties: { TRACE_ON: 'false', REGION: 'local' }
   }
 ])
 
@@ -184,33 +277,26 @@ const messageId = ref('')
 const messageKey = ref('')
 const timeRange = ref<[number, number] | null>(null)
 
+const autoRefreshEnabled = ref(true)
+const lastRefreshAt = ref(formatDateTime(new Date()))
+
 const showDetailDrawer = ref(false)
 const currentMessage = ref<MessageItem | null>(null)
+
+let refreshTimer: ReturnType<typeof setInterval> | null = null
 
 const topicOptions = computed(() => {
   const list = selectedCluster.value
     ? messageList.value.filter(item => item.cluster === selectedCluster.value)
     : messageList.value
-
-  const uniqueTopics = Array.from(new Set(list.map(item => item.topic)))
-  return uniqueTopics.map(topic => ({ label: topic, value: topic }))
-})
-
-const summary = computed(() => {
-  const total = filteredMessages.value.length
-  const retry = filteredMessages.value.filter(item => item.status === 'retry').length
-  const dlq = filteredMessages.value.filter(item => item.status === 'dlq').length
-  return {
-    total,
-    retry,
-    dlq
-  }
+  const topics = Array.from(new Set(list.map(item => item.topic)))
+  return topics.map(topic => ({ label: topic, value: topic }))
 })
 
 const filteredMessages = computed(() => {
   const kw = keyword.value.trim().toLowerCase()
-  const messageIdKeyword = messageId.value.trim().toLowerCase()
-  const messageKeyKeyword = messageKey.value.trim().toLowerCase()
+  const idKw = messageId.value.trim().toLowerCase()
+  const keyKw = messageKey.value.trim().toLowerCase()
 
   return messageList.value.filter((item) => {
     const matchCluster = !selectedCluster.value || item.cluster === selectedCluster.value
@@ -223,14 +309,21 @@ const filteredMessages = computed(() => {
       || item.keys.toLowerCase().includes(kw)
       || item.messageId.toLowerCase().includes(kw)
 
-    const matchMessageId = !messageIdKeyword || item.messageId.toLowerCase().includes(messageIdKeyword)
-    const matchMessageKey = !messageKeyKeyword || item.keys.toLowerCase().includes(messageKeyKeyword)
+    const matchMessageId = !idKw || item.messageId.toLowerCase().includes(idKw)
+    const matchMessageKey = !keyKw || item.keys.toLowerCase().includes(keyKw)
 
     const matchTime = !timeRange.value
       || (item.storeTimestamp >= timeRange.value[0] && item.storeTimestamp <= timeRange.value[1])
 
     return matchCluster && matchTopic && matchStatus && matchKeyword && matchMessageId && matchMessageKey && matchTime
   })
+})
+
+const summary = computed(() => {
+  const total = filteredMessages.value.length
+  const retry = filteredMessages.value.filter(item => item.status === 'retry').length
+  const dlq = filteredMessages.value.filter(item => item.status === 'dlq').length
+  return { total, retry, dlq }
 })
 
 const getStatusTagType = (status: MessageStatus) => {
@@ -243,6 +336,80 @@ const getStatusText = (status: MessageStatus) => {
   if (status === 'normal') return '正常'
   if (status === 'retry') return '重试中'
   return '死信'
+}
+
+const syncCurrentMessage = () => {
+  if (!currentMessage.value) return
+  const latest = messageList.value.find(item => item.id === currentMessage.value?.id)
+  if (latest) {
+    currentMessage.value = latest
+  }
+}
+
+const runMessageRefresh = (mode: 'auto' | 'manual') => {
+  const now = Date.now()
+
+  let nextList = messageList.value.map((item) => {
+    if (Math.random() > 0.5) {
+      return item
+    }
+
+    const nextTimestamp = now - randomInt(0, 120) * 1000
+    const roll = Math.random()
+    let nextStatus: MessageStatus
+    if (roll < 0.7) {
+      nextStatus = 'normal'
+    } else if (roll < 0.94) {
+      nextStatus = 'retry'
+    } else {
+      nextStatus = 'dlq'
+    }
+
+    const nextRetryTimes = nextStatus === 'normal' ? 0 : (nextStatus === 'retry' ? randomInt(1, 6) : 16)
+
+    return {
+      ...item,
+      status: nextStatus,
+      retryTimes: nextRetryTimes,
+      queueOffset: item.queueOffset + randomInt(0, 12),
+      storeTimestamp: nextTimestamp,
+      storeTime: formatDateTime(new Date(nextTimestamp)),
+      properties: {
+        ...item.properties,
+        LAST_SCAN_AT: formatDateTime(new Date(now))
+      }
+    }
+  })
+
+  if (Math.random() < 0.35) {
+    const nextId = Math.max(...nextList.map(item => item.id)) + 1
+    nextList = [createAutoMessage(nextId), ...nextList]
+  }
+
+  if (nextList.length > 80) {
+    nextList = nextList.slice(0, 80)
+  }
+
+  messageList.value = nextList
+  lastRefreshAt.value = formatDateTime(new Date(now))
+  syncCurrentMessage()
+
+  if (mode === 'manual') {
+    message.success('已刷新消息状态与索引')
+  }
+}
+
+const startAutoRefresh = () => {
+  if (refreshTimer) return
+  refreshTimer = setInterval(() => {
+    runMessageRefresh('auto')
+  }, AUTO_REFRESH_MS)
+}
+
+const stopAutoRefresh = () => {
+  if (!refreshTimer) return
+  clearInterval(refreshTimer)
+  refreshTimer = null
 }
 
 const handleReset = () => {
@@ -258,6 +425,15 @@ const handleReset = () => {
 
 const handleSearch = () => {
   message.success(`查询完成，共 ${filteredMessages.value.length} 条消息`)
+}
+
+const handleRefreshAll = () => {
+  runMessageRefresh('manual')
+}
+
+const handleToggleAutoRefresh = () => {
+  autoRefreshEnabled.value = !autoRefreshEnabled.value
+  message.success(autoRefreshEnabled.value ? '已开启自动刷新' : '已关闭自动刷新')
 }
 
 const handlePreview = (row: MessageItem) => {
@@ -282,6 +458,8 @@ const handleCopyMessageId = async (value: string) => {
   }
 }
 
+const tableScrollX = 1320
+
 const columns: DataTableColumns<MessageItem> = [
   {
     title: 'Message ID',
@@ -292,12 +470,14 @@ const columns: DataTableColumns<MessageItem> = [
   {
     title: 'Topic',
     key: 'topic',
-    width: 150
+    width: 150,
+    ellipsis: { tooltip: true }
   },
   {
     title: 'Tag',
     key: 'tags',
-    width: 130
+    width: 130,
+    ellipsis: { tooltip: true }
   },
   {
     title: 'Key',
@@ -317,11 +497,7 @@ const columns: DataTableColumns<MessageItem> = [
     width: 96,
     render: row => h(
       NTag,
-      {
-        size: 'small',
-        type: getStatusTagType(row.status),
-        round: true
-      },
+      { size: 'small', type: getStatusTagType(row.status), round: true },
       { default: () => getStatusText(row.status) }
     )
   },
@@ -342,41 +518,22 @@ const columns: DataTableColumns<MessageItem> = [
         default: () => [
           h(
             NButton,
-            {
-              size: 'tiny',
-              quaternary: true,
-              onClick: () => handlePreview(row)
-            },
-            {
-              icon: () => h(NIconProxy, { icon: EyeOutline }),
-              default: () => '详情'
-            }
+            { size: 'tiny', quaternary: true, onClick: () => handlePreview(row) },
+            { icon: () => h(NIconProxy, { icon: EyeOutline }), default: () => '详情' }
           ),
           h(
             NButton,
-            {
-              size: 'tiny',
-              quaternary: true,
-              onClick: () => handleCopyMessageId(row.messageId)
-            },
-            {
-              icon: () => h(NIconProxy, { icon: CopyOutline }),
-              default: () => '复制'
-            }
+            { size: 'tiny', quaternary: true, onClick: () => handleCopyMessageId(row.messageId) },
+            { icon: () => h(NIconProxy, { icon: CopyOutline }), default: () => '复制' }
           ),
           h(
             NPopconfirm,
-            {
-              onPositiveClick: () => handleResend(row)
-            },
+            { onPositiveClick: () => handleResend(row) },
             {
               trigger: () => h(
                 NButton,
                 { size: 'tiny', type: 'warning', quaternary: true },
-                {
-                  icon: () => h(NIconProxy, { icon: RefreshOutline }),
-                  default: () => '重投'
-                }
+                { icon: () => h(NIconProxy, { icon: RefreshOutline }), default: () => '重投' }
               ),
               default: () => '确认重新投递该消息吗？'
             }
@@ -388,29 +545,43 @@ const columns: DataTableColumns<MessageItem> = [
 ]
 
 const NIconProxy = (props: { icon: any }) => h('span', { class: 'icon-proxy' }, [h(props.icon)])
+
+watch(autoRefreshEnabled, (enabled) => {
+  if (enabled) {
+    startAutoRefresh()
+  } else {
+    stopAutoRefresh()
+  }
+})
+
+onMounted(() => {
+  if (autoRefreshEnabled.value) {
+    startAutoRefresh()
+  }
+})
+
+onUnmounted(() => {
+  stopAutoRefresh()
+})
 </script>
 
 <template>
   <div class="message-page">
-    <n-alert type="info" :show-icon="false" class="page-hint">
-      当前为消息查询模拟页，字段与交互对齐 RocketMQ Dashboard 常见使用流程。
-    </n-alert>
-
     <n-grid responsive="screen" cols="1 s:3" :x-gap="12" :y-gap="12" class="summary-grid">
       <n-gi>
-        <n-card size="small" :bordered="false" class="summary-card">
+        <n-card size="small" hoverable class="summary-card">
           <div class="summary-label">查询结果</div>
           <div class="summary-value">{{ summary.total }}</div>
         </n-card>
       </n-gi>
       <n-gi>
-        <n-card size="small" :bordered="false" class="summary-card">
+        <n-card size="small" hoverable class="summary-card">
           <div class="summary-label">重试中</div>
           <div class="summary-value is-warning">{{ summary.retry }}</div>
         </n-card>
       </n-gi>
       <n-gi>
-        <n-card size="small" :bordered="false" class="summary-card">
+        <n-card size="small" hoverable class="summary-card">
           <div class="summary-label">死信消息</div>
           <div class="summary-value is-error">{{ summary.dlq }}</div>
         </n-card>
@@ -422,13 +593,8 @@ const NIconProxy = (props: { icon: any }) => h('span', { class: 'icon-proxy' }, 
         <n-grid responsive="screen" cols="1 s:2 m:3 l:6" :x-gap="12" :y-gap="10">
           <n-gi>
             <n-form-item label="集群">
-              <n-select
-                v-model:value="selectedCluster"
-                :options="clusterOptions"
-                clearable
-                placeholder="全部集群"
-                @update:value="selectedTopic = null"
-              />
+              <n-select v-model:value="selectedCluster" :options="clusterOptions" clearable placeholder="全部集群"
+                @update:value="selectedTopic = null" />
             </n-form-item>
           </n-gi>
           <n-gi>
@@ -458,18 +624,13 @@ const NIconProxy = (props: { icon: any }) => h('span', { class: 'icon-proxy' }, 
           </n-gi>
           <n-gi :span="2">
             <n-form-item label="存储时间">
-              <n-date-picker
-                v-model:value="timeRange"
-                type="datetimerange"
-                clearable
-                style="width: 100%"
-                :actions="['clear', 'confirm']"
-              />
+              <n-date-picker v-model:value="timeRange" type="datetimerange" clearable style="width: 100%"
+                :actions="['clear', 'confirm']" />
             </n-form-item>
           </n-gi>
-          <n-gi :span="1">
+          <n-gi :span="4">
             <n-form-item label="操作" class="action-form-item">
-              <n-space>
+              <n-space align="center" wrap>
                 <n-button type="primary" @click="handleSearch">
                   <template #icon>
                     <NIconProxy :icon="SearchOutline" />
@@ -477,6 +638,19 @@ const NIconProxy = (props: { icon: any }) => h('span', { class: 'icon-proxy' }, 
                   查询
                 </n-button>
                 <n-button @click="handleReset">重置</n-button>
+                <n-button quaternary @click="handleRefreshAll">
+                  <template #icon>
+                    <NIconProxy :icon="RefreshOutline" />
+                  </template>
+                  刷新消息
+                </n-button>
+                <n-button :type="autoRefreshEnabled ? 'success' : 'default'" quaternary
+                  @click="handleToggleAutoRefresh">
+                  {{ autoRefreshEnabled ? '自动刷新中' : '自动刷新已关闭' }}
+                </n-button>
+                <n-tag size="small" :type="autoRefreshEnabled ? 'success' : 'default'" round class="refresh-meta-tag">
+                  最近刷新：{{ lastRefreshAt }}
+                </n-tag>
               </n-space>
             </n-form-item>
           </n-gi>
@@ -485,15 +659,8 @@ const NIconProxy = (props: { icon: any }) => h('span', { class: 'icon-proxy' }, 
     </n-card>
 
     <n-card :bordered="false" class="panel-card table-card" title="消息列表">
-      <n-data-table
-        :columns="columns"
-        :data="filteredMessages"
-        :row-key="(row: MessageItem) => row.id"
-        size="small"
-        striped
-        flex-height
-        max-height="520"
-      />
+      <n-data-table :columns="columns" :data="filteredMessages" :row-key="(row: MessageItem) => row.id" size="small"
+        striped flex-height max-height="520" :single-line="true" :scroll-x="tableScrollX" />
     </n-card>
 
     <n-drawer v-model:show="showDetailDrawer" :width="560" placement="right" resizable>
@@ -547,11 +714,7 @@ const NIconProxy = (props: { icon: any }) => h('span', { class: 'icon-proxy' }, 
 .message-page {
   display: flex;
   flex-direction: column;
-  gap: 12px;
-}
-
-.page-hint {
-  border-radius: 10px;
+  gap: 16px;
 }
 
 .summary-grid {
@@ -560,10 +723,13 @@ const NIconProxy = (props: { icon: any }) => h('span', { class: 'icon-proxy' }, 
 
 .summary-card,
 .panel-card {
-  border-radius: 12px;
+  border-radius: 5px;
   background: var(--surface-2, #fff);
-  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.03);
 }
+
+.summary-card {}
+
+.summary-card:hover {}
 
 .summary-label {
   font-size: 12px;
@@ -592,6 +758,10 @@ const NIconProxy = (props: { icon: any }) => h('span', { class: 'icon-proxy' }, 
 
 .action-form-item :deep(.n-form-item-blank) {
   align-items: center;
+}
+
+.refresh-meta-tag {
+  max-width: 250px;
 }
 
 .mono-text {

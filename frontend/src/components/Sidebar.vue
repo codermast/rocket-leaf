@@ -1,7 +1,5 @@
 <script setup lang="ts">
-// Sidebar.vue
-// 使用 Naive UI 和 Ionicons5 图标构建的左侧边栏
-import { ref, h, computed } from 'vue'
+import { ref, h, computed, onMounted, watch } from 'vue'
 import type { Component } from 'vue'
 import { NMenu, NIcon, NLayoutSider, NTooltip, NDropdown, NAvatar, NText, NBadge } from 'naive-ui'
 import type { MenuOption } from 'naive-ui'
@@ -16,39 +14,49 @@ import {
     ChevronDownOutline,
     AddOutline,
     LogoGithub,
-    OpenOutline,
+    OpenOutline
 } from '@vicons/ionicons5'
-import { render } from 'naive-ui/es/_utils'
 
-// 渲染图标的辅助函数
+import { Browser } from '@wailsio/runtime'
+
+interface Instance {
+    label: string
+    value: string
+    ip: string
+    status: 'online' | 'offline'
+    icon: Component
+}
+
+interface SidebarMenuItem {
+    label: string
+    key: string
+    icon: Component
+}
+
+const emit = defineEmits<{
+    (e: 'update:currentPage', key: string): void
+    (e: 'open:settings'): void
+}>()
+
+const STORAGE_KEYS = {
+    collapsed: 'rocket-leaf.sidebar.collapsed',
+    activeKey: 'rocket-leaf.sidebar.active-key',
+    selectedInstance: 'rocket-leaf.sidebar.selected-instance'
+} as const
+
 const renderIcon = (icon: Component) => {
     return () => h(NIcon, null, { default: () => h(icon) })
 }
 
-// RocketMQ 图标（来自 Iconify 的 simple-icons:apacherocketmq）
 const RocketMQIcon = {
     render() {
         return h('span', { class: 'rocketmq-icon' })
     }
 }
 
-// 侧边栏是否折叠
 const collapsed = ref(false)
-
-// 当前选中的菜单项
 const activeKey = ref<string>('dashboard')
-
-// 连接下拉显示状态
 const showConnectionDropdown = ref(false)
-
-// RocketMQ 实例列表（模拟数据）
-interface Instance {
-    label: string
-    value: string
-    ip: string
-    status: 'online' | 'offline'  // 连接状态
-    icon: Component
-}
 
 const fallbackInstance: Instance = {
     label: '未连接实例',
@@ -64,26 +72,64 @@ const instances = ref<Instance[]>([
     { label: '开发环境', value: 'dev', ip: 'localhost:9876', status: 'offline', icon: SpeedometerOutline }
 ])
 
-// 当前选中的实例
 const selectedInstance = ref<string>('prod')
 
-// 获取当前选中实例的信息
 const currentInstance = computed<Instance>(() => {
-    return instances.value.find(i => i.value === selectedInstance.value) ?? instances.value[0] ?? fallbackInstance
+    return instances.value.find(item => item.value === selectedInstance.value) ?? instances.value[0] ?? fallbackInstance
 })
 
-// 选择实例
+const onlineInstanceCount = computed(() => instances.value.filter(item => item.status === 'online').length)
+const offlineInstanceCount = computed(() => instances.value.length - onlineInstanceCount.value)
+
+const menuCatalog: SidebarMenuItem[] = [
+    { label: '仪表盘', key: 'dashboard', icon: SpeedometerOutline },
+    { label: '连接管理', key: 'connections', icon: LinkOutline },
+    { label: 'Topic 管理', key: 'topics', icon: FolderOutline },
+    { label: '消费者组', key: 'consumer-groups', icon: PeopleOutline },
+    { label: '消息查询', key: 'messages', icon: ChatbubblesOutline },
+    { label: '集群状态', key: 'cluster', icon: ServerOutline }
+]
+
+const menuKeys = new Set(menuCatalog.map(item => item.key))
+
+const menuOptions = computed<MenuOption[]>(() => {
+    return menuCatalog.map((item) => ({
+        key: item.key,
+        icon: renderIcon(item.icon),
+        label: () => h('div', { class: 'menu-option-label' }, [
+            h('span', { class: 'menu-option-text' }, item.label)
+        ])
+    }))
+})
+
+const addConnectionKey = '__add_connection__'
+const manageConnectionKey = '__manage_connection__'
+
+const canUseStorage = () => typeof window !== 'undefined'
+
+const writeStorage = (key: string, value: string) => {
+    if (!canUseStorage()) return
+    window.localStorage.setItem(key, value)
+}
+
+const readStorage = (key: string) => {
+    if (!canUseStorage()) return null
+    return window.localStorage.getItem(key)
+}
+
+const navigateToPage = (key: string) => {
+    activeKey.value = key
+    emit('update:currentPage', key)
+}
+
 const selectInstance = (value: string) => {
     selectedInstance.value = value
 }
 
-// 添加新连接
 const addNewConnection = () => {
-    // TODO: 打开添加连接对话框
-    console.log('Add new connection')
+    navigateToPage('connections')
+    showConnectionDropdown.value = false
 }
-
-const addConnectionKey = '__add_connection__'
 
 const handleConnectionItemClick = (value: string) => {
     selectInstance(value)
@@ -93,48 +139,39 @@ const handleConnectionItemClick = (value: string) => {
 const renderConnectionDropdownHeader = () => {
     return h(
         'div',
-        {
-            style: 'display: flex; align-items: center; padding: 8px 12px;'
-        },
+        { style: 'display: flex; align-items: center; padding: 8px 12px;' },
         [
-            h(NAvatar, {
-                round: true,
-                style: 'margin-right: 12px;',
-                src: 'https://07akioni.oss-cn-beijing.aliyuncs.com/demo1.JPG'
-            }),
+            h(
+                NAvatar,
+                {
+                    round: true,
+                    size: 34,
+                    style: 'margin-right: 12px; background: linear-gradient(135deg, #22c372 0%, #18a058 100%); color: #fff;'
+                },
+                {
+                    default: () => h(NIcon, { size: 16 }, { default: () => h(RocketMQIcon) })
+                }
+            ),
             h('div', null, [
                 h('div', null, [h(NText, { depth: 2 }, { default: () => 'RocketMQ 集群列表' })]),
                 h('div', { style: 'font-size: 12px;' }, [
-                    h(
-                        NText,
-                        { depth: 3 },
-                        { default: () => '选择 RocketMQ 实例集群' }
-                    )
+                    h(NText, { depth: 3 }, { default: () => `在线 ${onlineInstanceCount.value} · 离线 ${offlineInstanceCount.value}` })
                 ])
             ])
         ]
     )
 }
 
-// const renderConnectionOptionCard = (instance: Instance) => {
-//     const isSelected = selectedInstance.value === instance.value
-//     return h('div', { style: 'color: blue;' }, '特殊蓝字选项')
-// }
-
 const connectionDropdownOptions = computed(() => {
     const instanceOptions = instances.value.map((instance) => ({
         key: instance.value,
-        label: () =>
-            h('div', { style: 'display: flex; align-items: center; gap: 8px;' }, [
-                // 实例名称
-                h('span', null, instance.label),
-                // 状态标签
-                h(NBadge, {
-                    value: instance.status === 'online' ? '在线' : '离线',
-                    type: instance.status === 'online' ? 'success' : 'error',
-                    // 如果你只想要个小圆点，不想要文字，可以用 dot 属性
-                    // dot: true 
-                })]),
+        label: () => h('div', { style: 'display: flex; align-items: center; gap: 8px;' }, [
+            h('span', null, instance.label),
+            h(NBadge, {
+                value: instance.status === 'online' ? '在线' : '离线',
+                type: instance.status === 'online' ? 'success' : 'error'
+            })
+        ]),
         icon: renderIcon(instance.icon)
     }))
 
@@ -154,6 +191,11 @@ const connectionDropdownOptions = computed(() => {
             key: 'connection-action-divider'
         },
         {
+            key: manageConnectionKey,
+            label: '连接管理',
+            icon: renderIcon(LinkOutline)
+        },
+        {
             key: addConnectionKey,
             label: '添加新连接',
             icon: renderIcon(AddOutline)
@@ -163,80 +205,81 @@ const connectionDropdownOptions = computed(() => {
 
 const handleConnectionSelect = (key: string | number) => {
     const selectedKey = String(key)
+
     if (selectedKey === addConnectionKey) {
         addNewConnection()
+        return
+    }
+
+    if (selectedKey === manageConnectionKey) {
+        navigateToPage('connections')
         showConnectionDropdown.value = false
         return
     }
+
     handleConnectionItemClick(selectedKey)
 }
 
-// 菜单选项 - 只保留一级导航
-const menuOptions: MenuOption[] = [
-    {
-        label: '仪表盘',
-        key: 'dashboard',
-        icon: renderIcon(SpeedometerOutline)
-    },
-    {
-        label: '连接管理',
-        key: 'connections',
-        icon: renderIcon(LinkOutline)
-    },
-    {
-        label: 'Topic 管理',
-        key: 'topics',
-        icon: renderIcon(FolderOutline)
-    },
-    {
-        label: '消费者组',
-        key: 'consumer-groups',
-        icon: renderIcon(PeopleOutline)
-    },
-    {
-        label: '消息查询',
-        key: 'messages',
-        icon: renderIcon(ChatbubblesOutline)
-    },
-    {
-        label: '集群状态',
-        key: 'cluster',
-        icon: renderIcon(ServerOutline)
-    }
-]
-
-// 打开 GitHub 仓库
-const openGithub = () => {
-    window.open('https://github.com/codermast/rocket-leaf', '_blank')
-}
-
-// 定义事件
-const emit = defineEmits<{
-    (e: 'update:currentPage', key: string): void
-    (e: 'open:settings'): void
-}>()
-
-// 处理菜单选择
 const handleSelect = (key: string) => {
-    activeKey.value = key
-    emit('update:currentPage', key)
-    console.log('Selected:', key)
+    navigateToPage(key)
 }
 
 const openSettings = () => {
     emit('open:settings')
 }
+
+const openGithub = async () => {
+    // Wails 3 的前端运行时 API
+    // 这行代码会通过 IPC 发送消息给 Go 后端
+    await Browser.OpenURL("https://github.com/codermast/rocket-leaf")
+}
+
+const handleCollapse = () => {
+    collapsed.value = true
+}
+
+const handleExpand = () => {
+    collapsed.value = false
+}
+
+onMounted(() => {
+    const cachedCollapsed = readStorage(STORAGE_KEYS.collapsed)
+    if (cachedCollapsed !== null) {
+        collapsed.value = cachedCollapsed === '1'
+    }
+
+    const cachedActiveKey = readStorage(STORAGE_KEYS.activeKey)
+    if (cachedActiveKey && menuKeys.has(cachedActiveKey)) {
+        activeKey.value = cachedActiveKey
+        emit('update:currentPage', cachedActiveKey)
+    }
+
+    const cachedInstance = readStorage(STORAGE_KEYS.selectedInstance)
+    if (cachedInstance && instances.value.some(item => item.value === cachedInstance)) {
+        selectedInstance.value = cachedInstance
+    }
+})
+
+watch(collapsed, (value) => {
+    writeStorage(STORAGE_KEYS.collapsed, value ? '1' : '0')
+})
+
+watch(activeKey, (value) => {
+    writeStorage(STORAGE_KEYS.activeKey, value)
+})
+
+watch(selectedInstance, (value) => {
+    writeStorage(STORAGE_KEYS.selectedInstance, value)
+})
 </script>
 
 <template>
     <n-layout-sider bordered collapse-mode="width" :collapsed-width="64" :width="220" :collapsed="collapsed"
-        show-trigger @collapse="collapsed = true" @expand="collapsed = false" class="sidebar">
-        <!-- 实例选择器区域 -->
+        show-trigger class="sidebar" @collapse="handleCollapse" @expand="handleExpand">
         <div class="instance-selector-wrapper">
             <n-dropdown trigger="click" placement="bottom-start" :show-arrow="true" :options="connectionDropdownOptions"
                 v-model:show="showConnectionDropdown" :value="selectedInstance" @select="handleConnectionSelect">
                 <div class="instance-card" :class="{ collapsed }">
-                    <!-- 折叠状态：只显示图标 -->
                     <template v-if="collapsed">
                         <n-tooltip placement="right" :show-arrow="true">
                             <template #trigger>
@@ -252,7 +295,6 @@ const openSettings = () => {
                         </n-tooltip>
                     </template>
 
-                    <!-- 展开状态：显示卡片 -->
                     <template v-else>
                         <div class="instance-card-content">
                             <div class="instance-card-icon">
@@ -265,6 +307,7 @@ const openSettings = () => {
                                     {{ currentInstance.label }}
                                     <span class="status-dot inline" :class="currentInstance.status"></span>
                                 </div>
+                                <div class="instance-card-ip">{{ currentInstance.ip }}</div>
                             </div>
                             <n-icon :size="16" class="instance-card-arrow">
                                 <ChevronDownOutline />
@@ -273,15 +316,13 @@ const openSettings = () => {
                     </template>
                 </div>
             </n-dropdown>
+
         </div>
 
-        <!-- 菜单 -->
         <n-menu :value="activeKey" :collapsed="collapsed" :collapsed-width="64" :collapsed-icon-size="20"
-            :options="menuOptions" @update:value="handleSelect" class="main-menu" />
+            :options="menuOptions" class="main-menu" @update:value="handleSelect" />
 
-        <!-- 底部区域 -->
         <div class="sidebar-footer" :class="{ collapsed }">
-            <!-- 设置 -->
             <n-tooltip v-if="collapsed" placement="right">
                 <template #trigger>
                     <div class="footer-item" @click="openSettings">
@@ -303,7 +344,6 @@ const openSettings = () => {
                 <span class="footer-label">设置</span>
             </div>
 
-            <!-- GitHub -->
             <n-tooltip v-if="collapsed" placement="right">
                 <template #trigger>
                     <div class="footer-item github-item" @click="openGithub">
@@ -336,10 +376,8 @@ const openSettings = () => {
                 </div>
             </div>
         </div>
-
     </n-layout-sider>
 </template>
-
 
 <style scoped>
 .sidebar {
@@ -349,18 +387,15 @@ const openSettings = () => {
     flex-direction: column;
 }
 
-/* 确保 NLayoutSider 内部滚动容器也使用 flex */
 .sidebar :deep(.n-layout-sider-scroll-container) {
     display: flex;
     flex-direction: column;
 }
 
-/* 实例选择器区域 */
 .instance-selector-wrapper {
     border-bottom: 1px solid var(--border-color, rgba(0, 0, 0, 0.06));
 }
 
-/* 实例卡片 */
 .instance-card {
     margin: 12px;
     border-radius: 10px;
@@ -409,8 +444,6 @@ const openSettings = () => {
     position: relative;
     width: 36px;
     height: 36px;
-    min-width: 36px;
-    min-height: 36px;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -465,17 +498,9 @@ const openSettings = () => {
     filter: saturate(1.06) brightness(1.03);
 }
 
-.instance-card:active .instance-card-icon,
-.instance-card:active .instance-card-icon-only {
-    transform: translateY(0);
-    box-shadow: 0 3px 8px rgba(24, 160, 88, 0.2);
-    filter: none;
-}
-
 .instance-card-info {
     flex: 1;
     min-width: 0;
-    overflow: hidden;
 }
 
 .instance-card-name {
@@ -488,16 +513,14 @@ const openSettings = () => {
 }
 
 .instance-card-ip {
+    margin-top: 4px;
     font-size: 12px;
     color: var(--text-secondary, #666);
-    margin-top: 4px;
-    font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
+    font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', monospace;
     letter-spacing: 0.2px;
     background: var(--chip-bg, rgba(0, 0, 0, 0.04));
     padding: 2px 6px;
     border-radius: 6px;
-    display: block;
-    max-width: 100%;
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
@@ -508,7 +531,10 @@ const openSettings = () => {
     flex-shrink: 0;
 }
 
-/* 状态指示点 */
+
+
+
+
 .status-dot {
     width: 8px;
     height: 8px;
@@ -537,13 +563,25 @@ const openSettings = () => {
     border: 2px solid white;
 }
 
-/* 主菜单占据剩余空间 */
+.menu-option-label {
+    width: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+}
+
+.menu-option-text {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
 .main-menu {
     flex: 1;
     overflow-y: auto;
 }
 
-/* 底部区域 - 固定在底部 */
 .sidebar-footer {
     margin-top: auto;
     border-top: 1px solid var(--border-color, rgba(0, 0, 0, 0.06));
@@ -566,12 +604,6 @@ const openSettings = () => {
     color: var(--text-color, #333);
 }
 
-.footer-item.active {
-    background: var(--surface-2-hover, #f5f5f5);
-    color: var(--text-color, #333);
-}
-
-/* 折叠状态下居中对齐 */
 .sidebar-footer.collapsed {
     padding: 6px 0 8px;
 }
@@ -583,10 +615,6 @@ const openSettings = () => {
     height: var(--menu-item-height, 42px);
     margin: 0;
     border-radius: 0;
-    background: transparent;
-}
-
-.sidebar-footer.collapsed .footer-item:hover {
     background: transparent;
 }
 
@@ -603,8 +631,7 @@ const openSettings = () => {
     pointer-events: none;
 }
 
-.sidebar-footer.collapsed .footer-item:hover::before,
-.sidebar-footer.collapsed .footer-item.active::before {
+.sidebar-footer.collapsed .footer-item:hover::before {
     background: var(--menu-item-hover-bg, #f3f3f5);
 }
 
@@ -619,10 +646,6 @@ const openSettings = () => {
     align-items: center;
     justify-content: center;
     flex-shrink: 0;
-    border-radius: 6px;
-    background: transparent;
-    color: inherit;
-    transition: background 0.15s, color 0.15s;
 }
 
 .footer-label {
@@ -631,10 +654,6 @@ const openSettings = () => {
 }
 
 .github-item {
-    margin-top: 4px;
-}
-
-.sidebar-footer.collapsed .github-item {
     margin-top: 4px;
 }
 
@@ -655,111 +674,5 @@ const openSettings = () => {
     font-size: 12px;
     color: var(--text-muted, #888);
     margin-top: 1px;
-}
-
-.connection-dropdown-header {
-    padding: 6px 4px;
-}
-
-.connection-dropdown-title {
-    font-size: 13px;
-    font-weight: 600;
-    line-height: 1.2;
-    color: var(--text-color, #333);
-}
-
-.connection-dropdown-subtitle {
-    margin-top: 2px;
-    font-size: 12px;
-    line-height: 1.25;
-    color: var(--text-muted, #888);
-}
-
-.connection-option-card {
-    max-width: 300px;
-    min-width: 236px;
-    cursor: pointer;
-}
-
-.connection-option-card :deep(.n-card__content) {
-    padding: 8px 10px;
-    border-radius: 10px;
-    border: 1px solid transparent;
-    transition: background-color 0.2s ease, border-color 0.2s ease;
-}
-
-.connection-option-card.is-selected :deep(.n-card__content) {
-    background: rgba(24, 160, 88, 0.1);
-    border-color: rgba(24, 160, 88, 0.24);
-}
-
-.connection-option-content {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    min-width: 0;
-}
-
-.connection-option-icon {
-    width: 30px;
-    height: 30px;
-    border-radius: 8px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    flex-shrink: 0;
-    color: #fff;
-    background: linear-gradient(135deg, #22c372 0%, #18a058 100%);
-    box-shadow: 0 2px 8px rgba(24, 160, 88, 0.22);
-}
-
-.connection-option-main {
-    min-width: 0;
-    flex: 1;
-}
-
-.connection-option-title-row {
-    display: flex;
-    align-items: center;
-    gap: 6px;
-    min-width: 0;
-}
-
-.connection-option-name {
-    min-width: 0;
-    font-size: 13px;
-    font-weight: 600;
-    line-height: 1.3;
-    color: var(--n-option-text-color, #303133);
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-}
-
-.connection-option-status {
-    width: 7px;
-    height: 7px;
-    border-radius: 50%;
-    flex-shrink: 0;
-}
-
-.connection-option-status.is-online {
-    background: #18a058;
-}
-
-.connection-option-status.is-offline {
-    background: #e88080;
-}
-
-.connection-option-ip {
-    margin-top: 2px;
-    font-size: 12px;
-    line-height: 1.25;
-    color: var(--n-option-text-color, #909399);
-    font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
-    letter-spacing: 0.2px;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
 }
 </style>

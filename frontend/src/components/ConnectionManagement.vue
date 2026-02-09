@@ -1,7 +1,6 @@
 <script setup lang="ts">
 import { computed, h, ref } from 'vue'
 import {
-  NAlert,
   NButton,
   NCard,
   NDataTable,
@@ -241,17 +240,20 @@ const saveConnection = async () => {
   showEditor.value = false
 }
 
+const tableScrollX = 1160
+
 const columns: DataTableColumns<ConnectionItem> = [
   {
     title: '连接名称',
     key: 'name',
+    minWidth: 180,
     render: (row) => h('div', { class: 'name-cell' }, [
       h('span', null, row.name),
       row.isDefault ? h(NTag, { type: 'success', size: 'small', round: true }, { default: () => '默认' }) : null
     ])
   },
   { title: '环境', key: 'env', width: 90 },
-  { title: 'NameServer', key: 'nameServer' },
+  { title: 'NameServer', key: 'nameServer', minWidth: 220, ellipsis: { tooltip: true } },
   {
     title: '状态',
     key: 'status',
@@ -305,22 +307,15 @@ const columns: DataTableColumns<ConnectionItem> = [
 
 <template>
   <div class="connection-page">
-    <n-alert type="info" :show-icon="false" class="page-hint">
-      当前为前端模拟数据页面，后续可直接接入 Wails 后端连接管理接口。
-    </n-alert>
-
-    <n-grid responsive="screen" cols="1 s:2 l:3" :x-gap="12" :y-gap="12" class="summary-grid">
+    <n-grid responsive="screen" cols="1 s:3 l:3" :x-gap="12" :y-gap="12" class="summary-grid">
       <n-gi v-for="item in summaryItems" :key="item.key">
-        <n-card size="small" :bordered="false" class="summary-card">
+        <n-card hoverable size="small" class="summary-card">
           <div class="summary-content">
             <div class="summary-label">{{ item.label }}</div>
             <div class="summary-value" :class="`is-${item.tone}`">{{ item.value }}</div>
             <div class="summary-foot">
-              <n-tag
-                size="small"
-                round
-                :type="item.tone === 'warning' ? 'warning' : item.tone === 'success' ? 'success' : 'default'"
-              >
+              <n-tag size="small" round
+                :type="item.tone === 'warning' ? 'warning' : item.tone === 'success' ? 'success' : 'default'">
                 {{ item.hint }}
               </n-tag>
             </div>
@@ -331,28 +326,18 @@ const columns: DataTableColumns<ConnectionItem> = [
 
     <n-card :bordered="false" class="table-card">
       <div class="toolbar">
-        <n-space>
+        <n-space wrap>
           <n-button type="primary" @click="openCreate">新增连接</n-button>
           <n-input v-model:value="searchKeyword" clearable placeholder="搜索名称 / 环境 / NameServer" style="width: 280px;" />
         </n-space>
       </div>
 
-      <n-data-table
-        :columns="columns"
-        :data="filteredConnections"
-        :pagination="{ pageSize: 8 }"
-        :single-line="false"
-        size="small"
-      />
+      <n-data-table :columns="columns" :data="filteredConnections" :pagination="{ pageSize: 8 }" :single-line="true"
+        :scroll-x="tableScrollX" size="small" />
     </n-card>
 
-    <n-modal
-      v-model:show="showEditor"
-      preset="card"
-      class="editor-modal"
-      :style="{ width: '560px', maxWidth: 'calc(100vw - 32px)' }"
-      :title="editingId ? '编辑连接' : '新增连接'"
-    >
+    <n-modal v-model:show="showEditor" preset="card" class="editor-modal"
+      :style="{ width: '560px', maxWidth: 'calc(100vw - 32px)' }" :title="editingId ? '编辑连接' : '新增连接'">
       <n-form ref="formRef" :model="formModel" :rules="formRules" label-placement="left" label-width="90">
         <n-form-item label="连接名称" path="name">
           <n-input v-model:value="formModel.name" placeholder="例如：生产集群" />
@@ -391,21 +376,20 @@ const columns: DataTableColumns<ConnectionItem> = [
 .connection-page {
   display: flex;
   flex-direction: column;
-  gap: 14px;
-}
-
-.page-hint {
-  border-radius: 10px;
+  gap: 16px;
 }
 
 .summary-card,
 .table-card {
   background: var(--surface-2, #fff);
-  border-radius: 12px;
+  border-radius: 5px;
 }
 
+.summary-card {}
+
+
 .summary-grid {
-  margin-top: -2px;
+  margin-top: 2px;
 }
 
 .summary-content {

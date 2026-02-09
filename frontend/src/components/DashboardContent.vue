@@ -55,9 +55,9 @@ const getAlertTagType = (level: AlertItem['level']) => {
 
 <template>
   <div class="dashboard-content">
-    <n-grid responsive="screen" cols="1 s:2 m:4" :x-gap="16" :y-gap="16">
+    <n-grid responsive="screen" cols="4" :x-gap="16" :y-gap="16">
       <n-gi v-for="item in metrics" :key="item.key">
-        <n-card size="small" :bordered="false" class="metric-card">
+        <n-card hoverable size="small" class="metric-card">
           <n-statistic :label="item.label" :value="item.value">
             <template v-if="item.suffix" #suffix>{{ item.suffix }}</template>
           </n-statistic>
@@ -120,7 +120,7 @@ const getAlertTagType = (level: AlertItem['level']) => {
 .metric-card,
 .panel-card {
   background: var(--surface-2, #fff);
-  border-radius: 12px;
+  border-radius: 5px;
   box-shadow: 0 2px 10px rgba(0, 0, 0, 0.03);
 }
 

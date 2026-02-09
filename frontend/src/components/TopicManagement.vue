@@ -1,7 +1,6 @@
 <script setup lang="ts">
 import { computed, h, ref } from 'vue'
 import {
-  NAlert,
   NButton,
   NCard,
   NDataTable,
@@ -291,10 +290,14 @@ const getMessageTypeTagType = (type: TopicMessageType) => {
   return 'default'
 }
 
+const tableScrollX = 1240
+
 const columns: DataTableColumns<TopicItem> = [
   {
     title: 'Topic',
     key: 'topic',
+    minWidth: 180,
+    ellipsis: { tooltip: true },
     render: (row) => h('span', { class: 'topic-name' }, row.topic)
   },
   { title: '集群', key: 'cluster', width: 120 },
@@ -348,31 +351,27 @@ const columns: DataTableColumns<TopicItem> = [
 
 <template>
   <div class="topic-page">
-    <n-alert type="info" :show-icon="false" class="page-hint">
-      当前为 Topic 管理前端模拟页，已对齐常用 dashboard 操作流：筛选、查询、详情、创建、编辑、删除。
-    </n-alert>
-
-    <n-grid responsive="screen" cols="1 s:2 l:4" :x-gap="12" :y-gap="12">
+    <n-grid responsive="screen" cols="1 s:4 l:4" class="summary-grid" :x-gap="12" :y-gap="12">
       <n-gi>
-        <n-card size="small" :bordered="false" class="summary-card">
+        <n-card hoverable size="small" class="summary-card">
           <div class="summary-label">Topic 总数</div>
           <div class="summary-value">{{ summary.total }}</div>
         </n-card>
       </n-gi>
       <n-gi>
-        <n-card size="small" :bordered="false" class="summary-card">
+        <n-card hoverable size="small" class="summary-card">
           <div class="summary-label">可读写 Topic</div>
           <div class="summary-value success">{{ summary.rwCount }}</div>
         </n-card>
       </n-gi>
       <n-gi>
-        <n-card size="small" :bordered="false" class="summary-card">
+        <n-card hoverable size="small" class="summary-card">
           <div class="summary-label">总入流 TPS</div>
           <div class="summary-value">{{ summary.totalTpsIn }}</div>
         </n-card>
       </n-gi>
       <n-gi>
-        <n-card size="small" :bordered="false" class="summary-card">
+        <n-card hoverable size="small" class="summary-card">
           <div class="summary-label">总出流 TPS</div>
           <div class="summary-value">{{ summary.totalTpsOut }}</div>
         </n-card>
@@ -381,33 +380,18 @@ const columns: DataTableColumns<TopicItem> = [
 
     <n-card :bordered="false" class="table-card">
       <div class="toolbar">
-        <n-space>
+        <n-space wrap>
           <n-button type="primary" @click="openCreate">创建 Topic</n-button>
           <n-input v-model:value="keyword" clearable placeholder="搜索 Topic 名称 / 描述" style="width: 240px;" />
-          <n-select
-            v-model:value="selectedCluster"
-            clearable
-            :options="clusterOptions"
-            placeholder="集群筛选"
-            style="width: 140px;"
-          />
-          <n-select
-            v-model:value="selectedPerm"
-            clearable
-            :options="permOptions"
-            placeholder="权限筛选"
-            style="width: 130px;"
-          />
+          <n-select v-model:value="selectedCluster" clearable :options="clusterOptions" placeholder="集群筛选"
+            style="width: 140px;" />
+          <n-select v-model:value="selectedPerm" clearable :options="permOptions" placeholder="权限筛选"
+            style="width: 130px;" />
         </n-space>
       </div>
 
-      <n-data-table
-        :columns="columns"
-        :data="filteredTopics"
-        :pagination="{ pageSize: 10 }"
-        :single-line="false"
-        size="small"
-      />
+      <n-data-table :columns="columns" :data="filteredTopics" :pagination="{ pageSize: 10 }" :single-line="true"
+        :scroll-x="tableScrollX" size="small" />
     </n-card>
 
     <n-drawer v-model:show="showDetail" :width="640" placement="right" :trap-focus="false">
@@ -416,15 +400,18 @@ const columns: DataTableColumns<TopicItem> = [
           <n-descriptions bordered :column="2" size="small" label-placement="left">
             <n-descriptions-item label="Topic">{{ currentTopic.topic }}</n-descriptions-item>
             <n-descriptions-item label="集群">{{ currentTopic.cluster }}</n-descriptions-item>
-            <n-descriptions-item label="读写队列">{{ currentTopic.readQueue }}/{{ currentTopic.writeQueue }}</n-descriptions-item>
+            <n-descriptions-item label="读写队列">{{ currentTopic.readQueue }}/{{ currentTopic.writeQueue
+              }}</n-descriptions-item>
             <n-descriptions-item label="权限">
               <n-tag size="small" round :type="getPermTagType(currentTopic.perm)">{{ currentTopic.perm }}</n-tag>
             </n-descriptions-item>
             <n-descriptions-item label="消息类型">
-              <n-tag size="small" round :type="getMessageTypeTagType(currentTopic.messageType)">{{ currentTopic.messageType }}</n-tag>
+              <n-tag size="small" round :type="getMessageTypeTagType(currentTopic.messageType)">{{
+                currentTopic.messageType }}</n-tag>
             </n-descriptions-item>
             <n-descriptions-item label="消费者组">{{ currentTopic.consumerGroups }}</n-descriptions-item>
-            <n-descriptions-item label="TPS(入/出)">{{ currentTopic.tpsIn }}/{{ currentTopic.tpsOut }}</n-descriptions-item>
+            <n-descriptions-item label="TPS(入/出)">{{ currentTopic.tpsIn }}/{{ currentTopic.tpsOut
+              }}</n-descriptions-item>
             <n-descriptions-item label="最近更新">{{ currentTopic.lastUpdated }}</n-descriptions-item>
             <n-descriptions-item label="描述" :span="2">{{ currentTopic.description || '-' }}</n-descriptions-item>
           </n-descriptions>
@@ -458,13 +445,8 @@ const columns: DataTableColumns<TopicItem> = [
       </n-drawer-content>
     </n-drawer>
 
-    <n-modal
-      v-model:show="showEditor"
-      preset="card"
-      class="editor-modal"
-      :style="{ width: '620px', maxWidth: 'calc(100vw - 32px)' }"
-      :title="editingId ? '编辑 Topic' : '创建 Topic'"
-    >
+    <n-modal v-model:show="showEditor" preset="card" class="editor-modal"
+      :style="{ width: '620px', maxWidth: 'calc(100vw - 32px)' }" :title="editingId ? '编辑 Topic' : '创建 Topic'">
       <n-form ref="formRef" :model="formModel" :rules="formRules" label-placement="left" label-width="92">
         <n-form-item label="Topic 名称" path="topic">
           <n-input v-model:value="formModel.topic" placeholder="例如：order_event" :disabled="editingId !== null" />
@@ -519,18 +501,21 @@ const columns: DataTableColumns<TopicItem> = [
 .topic-page {
   display: flex;
   flex-direction: column;
-  gap: 14px;
+  gap: 16px;
 }
 
-.page-hint {
-  border-radius: 10px;
+.summary-grid {
+  margin-top: 2px;
 }
+
 
 .summary-card,
 .table-card {
   background: var(--surface-2, #fff);
-  border-radius: 12px;
+  border-radius: 5px;
 }
+
+.summary-card {}
 
 .summary-label {
   font-size: 13px;
@@ -571,5 +556,4 @@ const columns: DataTableColumns<TopicItem> = [
   font-weight: 600;
   color: var(--text-color, #333);
 }
-
 </style>

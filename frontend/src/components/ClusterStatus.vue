@@ -1,7 +1,6 @@
 <script setup lang="ts">
-import { computed, h, ref } from 'vue'
+import { computed, h, onMounted, onUnmounted, ref, watch } from 'vue'
 import {
-  NAlert,
   NButton,
   NCard,
   NDataTable,
@@ -46,6 +45,8 @@ interface BrokerNode {
   groups: number
   tpsIn: number
   tpsOut: number
+  tpsInHistory: number[]
+  tpsOutHistory: number[]
   msgInToday: number
   msgOutToday: number
   commitLogDiskUsage: number
@@ -54,7 +55,61 @@ interface BrokerNode {
   remark: string
 }
 
+type BrokerSeed = Omit<BrokerNode, 'tpsInHistory' | 'tpsOutHistory'>
+
 const message = useMessage()
+
+const HISTORY_POINTS = 12
+const AUTO_REFRESH_MS = 5000
+
+const pad2 = (value: number) => String(value).padStart(2, '0')
+
+const formatDateTime = (date: Date) => {
+  const y = date.getFullYear()
+  const m = pad2(date.getMonth() + 1)
+  const d = pad2(date.getDate())
+  const hh = pad2(date.getHours())
+  const mm = pad2(date.getMinutes())
+  const ss = pad2(date.getSeconds())
+  return `${y}-${m}-${d} ${hh}:${mm}:${ss}`
+}
+
+const clamp = (value: number, min: number, max: number) => {
+  return Math.max(min, Math.min(max, value))
+}
+
+const seedHistory = (base: number) => {
+  if (base <= 0) {
+    return Array.from({ length: HISTORY_POINTS }, () => 0)
+  }
+  return Array.from({ length: HISTORY_POINTS }, (_, index) => {
+    const wave = Math.sin(index / 2.4) * 0.08
+    const jitter = (Math.random() - 0.5) * 0.12
+    return Math.max(0, Math.round(base * (1 + wave + jitter)))
+  })
+}
+
+const createBroker = (seed: BrokerSeed): BrokerNode => ({
+  ...seed,
+  tpsInHistory: seedHistory(seed.tpsIn),
+  tpsOutHistory: seedHistory(seed.tpsOut)
+})
+
+const buildSparklinePoints = (series: number[]) => {
+  if (!series.length) return ''
+  if (series.length === 1) return `0,12 100,12`
+  const max = Math.max(...series, 1)
+  const min = Math.min(...series)
+  const range = Math.max(max - min, 1)
+
+  return series
+    .map((value, index) => {
+      const x = (index / (series.length - 1)) * 100
+      const y = 22 - ((value - min) / range) * 18
+      return `${x.toFixed(2)},${y.toFixed(2)}`
+    })
+    .join(' ')
+}
 
 const nameServerList = ref<NameServerNode[]>([
   {
@@ -92,7 +147,7 @@ const nameServerList = ref<NameServerNode[]>([
 ])
 
 const brokerList = ref<BrokerNode[]>([
-  {
+  createBroker({
     id: 1,
     cluster: '生产集群',
     brokerName: 'broker-prod-a',
@@ -112,8 +167,8 @@ const brokerList = ref<BrokerNode[]>([
     consumeQueueDiskUsage: 48,
     lastUpdate: '2026-02-09 16:52:16',
     remark: '生产主节点，业务高峰时段负载较高'
-  },
-  {
+  }),
+  createBroker({
     id: 2,
     cluster: '生产集群',
     brokerName: 'broker-prod-b',
@@ -133,8 +188,8 @@ const brokerList = ref<BrokerNode[]>([
     consumeQueueDiskUsage: 45,
     lastUpdate: '2026-02-09 16:52:09',
     remark: '生产从节点，数据复制稳定'
-  },
-  {
+  }),
+  createBroker({
     id: 3,
     cluster: '测试集群',
     brokerName: 'broker-test-a',
@@ -154,8 +209,8 @@ const brokerList = ref<BrokerNode[]>([
     consumeQueueDiskUsage: 66,
     lastUpdate: '2026-02-09 16:51:43',
     remark: '磁盘水位偏高，建议近期扩容'
-  },
-  {
+  }),
+  createBroker({
     id: 4,
     cluster: '开发集群',
     brokerName: 'broker-dev-a',
@@ -175,7 +230,7 @@ const brokerList = ref<BrokerNode[]>([
     consumeQueueDiskUsage: 0,
     lastUpdate: '2026-02-09 15:38:21',
     remark: '本地环境暂未启动'
-  }
+  })
 ])
 
 const selectedCluster = ref<string | null>(null)
@@ -184,6 +239,11 @@ const keyword = ref('')
 
 const showDetailDrawer = ref(false)
 const currentBroker = ref<BrokerNode | null>(null)
+
+const autoRefreshEnabled = ref(true)
+const lastRefreshAt = ref(formatDateTime(new Date()))
+
+let refreshTimer: ReturnType<typeof setInterval> | null = null
 
 const clusterOptions = computed(() => {
   const clusters = Array.from(new Set(brokerList.value.map(item => item.cluster)))
@@ -214,17 +274,17 @@ const summary = computed(() => {
   const totalBrokers = brokerList.value.length
   const onlineBrokers = brokerList.value.filter(item => item.status === 'online').length
   const warningBrokers = brokerList.value.filter(item => item.status === 'warning').length
+  const offlineBrokers = brokerList.value.filter(item => item.status === 'offline').length
   const avgDiskUsage = totalBrokers === 0
     ? 0
-    : Math.round(
-      brokerList.value.reduce((sum, item) => sum + item.commitLogDiskUsage, 0) / totalBrokers
-    )
+    : Math.round(brokerList.value.reduce((sum, item) => sum + item.commitLogDiskUsage, 0) / totalBrokers)
 
   return {
     totalClusters,
     totalBrokers,
     onlineBrokers,
     warningBrokers,
+    offlineBrokers,
     avgDiskUsage
   }
 })
@@ -256,6 +316,14 @@ const clusterRuntimeItems = computed(() => {
   })
 })
 
+const currentBrokerInPoints = computed(() => {
+  return buildSparklinePoints(currentBroker.value?.tpsInHistory ?? [])
+})
+
+const currentBrokerOutPoints = computed(() => {
+  return buildSparklinePoints(currentBroker.value?.tpsOutHistory ?? [])
+})
+
 const getStatusTagType = (status: NodeStatus) => {
   if (status === 'online') return 'success'
   if (status === 'warning') return 'warning'
@@ -268,8 +336,156 @@ const getStatusText = (status: NodeStatus) => {
   return '离线'
 }
 
+const pushHistory = (history: number[], value: number) => {
+  const next = history.length >= HISTORY_POINTS ? history.slice(1) : [...history]
+  next.push(value)
+  return next
+}
+
+const updateNameServerStatus = () => {
+  const brokerByCluster = new Map<string, BrokerNode[]>()
+  brokerList.value.forEach((item) => {
+    const list = brokerByCluster.get(item.cluster) ?? []
+    list.push(item)
+    brokerByCluster.set(item.cluster, list)
+  })
+
+  const nowText = formatDateTime(new Date())
+  nameServerList.value = nameServerList.value.map((node) => {
+    const items = brokerByCluster.get(node.cluster) ?? []
+    if (!items.length) {
+      return { ...node, status: 'offline', lastSeen: nowText }
+    }
+
+    const online = items.filter(item => item.status === 'online').length
+    const warning = items.filter(item => item.status === 'warning').length
+    const nextStatus: NodeStatus = online === 0 ? 'offline' : (warning > 0 ? 'warning' : 'online')
+
+    return {
+      ...node,
+      status: nextStatus,
+      lastSeen: nowText
+    }
+  })
+}
+
+const simulateBrokerTick = (item: BrokerNode) => {
+  const nowText = formatDateTime(new Date())
+
+  if (item.status === 'offline') {
+    return {
+      ...item,
+      tpsIn: 0,
+      tpsOut: 0,
+      tpsInHistory: pushHistory(item.tpsInHistory, 0),
+      tpsOutHistory: pushHistory(item.tpsOutHistory, 0),
+      lastUpdate: nowText
+    }
+  }
+
+  const inFactor = 0.9 + Math.random() * 0.22
+  const outFactor = 0.9 + Math.random() * 0.22
+  const jitterIn = Math.round((Math.random() - 0.5) * Math.max(item.tpsIn * 0.12, 24))
+  const jitterOut = Math.round((Math.random() - 0.5) * Math.max(item.tpsOut * 0.12, 20))
+
+  const nextTpsIn = Math.max(1, Math.round(item.tpsIn * inFactor) + jitterIn)
+  const nextTpsOut = Math.max(1, Math.round(item.tpsOut * outFactor) + jitterOut)
+
+  const nextCommitLog = clamp(
+    item.commitLogDiskUsage + Math.round((Math.random() - 0.5) * 4),
+    18,
+    96
+  )
+  const nextConsumeQueue = clamp(
+    item.consumeQueueDiskUsage + Math.round((Math.random() - 0.5) * 4),
+    12,
+    92
+  )
+
+  const nextStatus: NodeStatus = nextCommitLog >= 85 ? 'warning' : 'online'
+
+  const deltaSeconds = AUTO_REFRESH_MS / 1000
+  const nextMsgInToday = item.msgInToday + Math.round(nextTpsIn * deltaSeconds)
+  const nextMsgOutToday = item.msgOutToday + Math.round(nextTpsOut * deltaSeconds)
+
+  return {
+    ...item,
+    status: nextStatus,
+    tpsIn: nextTpsIn,
+    tpsOut: nextTpsOut,
+    tpsInHistory: pushHistory(item.tpsInHistory, nextTpsIn),
+    tpsOutHistory: pushHistory(item.tpsOutHistory, nextTpsOut),
+    commitLogDiskUsage: nextCommitLog,
+    consumeQueueDiskUsage: nextConsumeQueue,
+    msgInToday: nextMsgInToday,
+    msgOutToday: nextMsgOutToday,
+    lastUpdate: nowText
+  }
+}
+
+const runRefresh = (mode: 'auto' | 'manual') => {
+  brokerList.value = brokerList.value.map(item => simulateBrokerTick(item))
+
+  if (currentBroker.value) {
+    const latest = brokerList.value.find(item => item.id === currentBroker.value?.id)
+    if (latest) {
+      currentBroker.value = latest
+    }
+  }
+
+  updateNameServerStatus()
+  lastRefreshAt.value = formatDateTime(new Date())
+
+  if (mode === 'manual') {
+    message.success('已刷新全部集群状态')
+  }
+}
+
+const refreshSingleBroker = (id: number) => {
+  brokerList.value = brokerList.value.map(item => {
+    if (item.id !== id) return item
+    return simulateBrokerTick(item)
+  })
+
+  if (currentBroker.value?.id === id) {
+    const latest = brokerList.value.find(item => item.id === id)
+    if (latest) {
+      currentBroker.value = latest
+    }
+  }
+
+  updateNameServerStatus()
+  lastRefreshAt.value = formatDateTime(new Date())
+}
+
+const startAutoRefresh = () => {
+  if (refreshTimer) return
+  refreshTimer = setInterval(() => {
+    runRefresh('auto')
+  }, AUTO_REFRESH_MS)
+}
+
+const stopAutoRefresh = () => {
+  if (!refreshTimer) return
+  clearInterval(refreshTimer)
+  refreshTimer = null
+}
+
+const renderTrendCell = (row: BrokerNode) => {
+  const inPoints = buildSparklinePoints(row.tpsInHistory)
+  const outPoints = buildSparklinePoints(row.tpsOutHistory)
+
+  return h('div', { class: 'trend-cell' }, [
+    h('svg', { viewBox: '0 0 100 24', preserveAspectRatio: 'none', class: 'sparkline-svg' }, [
+      h('polyline', { points: inPoints, class: 'sparkline-in' }),
+      h('polyline', { points: outPoints, class: 'sparkline-out' })
+    ]),
+    h('div', { class: 'trend-meta' }, `In ${row.tpsIn} / Out ${row.tpsOut}`)
+  ])
+}
+
 const handleSearch = () => {
-  message.success(`查询完成，当前 ${filteredBrokers.value.length} 个 Broker`) 
+  message.success(`查询完成，当前 ${filteredBrokers.value.length} 个 Broker`)
 }
 
 const handleReset = () => {
@@ -286,11 +502,20 @@ const handleViewDetail = (row: BrokerNode) => {
 
 const handleRefreshRuntime = (row?: BrokerNode) => {
   if (row) {
+    refreshSingleBroker(row.id)
     message.success(`已刷新 ${row.brokerName} 运行状态`)
     return
   }
-  message.success('已刷新全部集群状态')
+
+  runRefresh('manual')
 }
+
+const handleToggleAutoRefresh = () => {
+  autoRefreshEnabled.value = !autoRefreshEnabled.value
+  message.success(autoRefreshEnabled.value ? '已开启自动刷新' : '已关闭自动刷新')
+}
+
+const tableScrollX = 1380
 
 const columns: DataTableColumns<BrokerNode> = [
   {
@@ -336,30 +561,28 @@ const columns: DataTableColumns<BrokerNode> = [
     )
   },
   {
-    title: 'TPS (In/Out)',
-    key: 'tps',
-    width: 136,
-    render: row => `${row.tpsIn} / ${row.tpsOut}`
+    title: '近 1 分钟 TPS',
+    key: 'tpsTrend',
+    minWidth: 180,
+    render: row => renderTrendCell(row)
   },
   {
     title: '磁盘水位',
     key: 'disk',
     minWidth: 170,
-    render: row => h('div', { class: 'disk-cell' }, [
-      h(
-        NProgress,
-        {
-          type: 'line',
-          percentage: row.commitLogDiskUsage,
-          indicatorPlacement: 'inside',
-          status: row.commitLogDiskUsage >= 80 ? 'error' : row.commitLogDiskUsage >= 70 ? 'warning' : 'success',
-          height: 16,
-          showIndicator: true,
-          processing: false,
-          railColor: 'rgba(128,128,128,0.16)'
-        }
-      )
-    ])
+    render: row => h(
+      NProgress,
+      {
+        type: 'line',
+        percentage: row.commitLogDiskUsage,
+        indicatorPlacement: 'inside',
+        status: row.commitLogDiskUsage >= 80 ? 'error' : row.commitLogDiskUsage >= 70 ? 'warning' : 'success',
+        height: 16,
+        showIndicator: true,
+        processing: false,
+        railColor: 'rgba(128,128,128,0.16)'
+      }
+    )
   },
   {
     title: '地址',
@@ -405,41 +628,61 @@ const columns: DataTableColumns<BrokerNode> = [
     )
   }
 ]
+
+watch(autoRefreshEnabled, (enabled) => {
+  if (enabled) {
+    startAutoRefresh()
+  } else {
+    stopAutoRefresh()
+  }
+})
+
+onMounted(() => {
+  if (autoRefreshEnabled.value) {
+    startAutoRefresh()
+  }
+})
+
+onUnmounted(() => {
+  stopAutoRefresh()
+})
 </script>
 
 <template>
   <div class="cluster-page">
-    <n-alert type="info" :show-icon="false" class="page-hint">
-      当前为集群状态模拟页面，后续可对接 NameServer 与 Broker 运行时接口。
-    </n-alert>
-
-    <n-grid responsive="screen" cols="1 s:2 l:5" :x-gap="12" :y-gap="12" class="summary-grid">
+    <n-grid responsive="screen" cols="3 l:6" :x-gap="12" :y-gap="12" class="summary-grid">
       <n-gi>
-        <n-card size="small" :bordered="false" class="summary-card">
+        <n-card size="small" hoverable class="summary-card">
           <div class="summary-label">集群数量</div>
           <div class="summary-value">{{ summary.totalClusters }}</div>
         </n-card>
       </n-gi>
       <n-gi>
-        <n-card size="small" :bordered="false" class="summary-card">
+        <n-card size="small" hoverable class="summary-card">
           <div class="summary-label">Broker 总数</div>
           <div class="summary-value">{{ summary.totalBrokers }}</div>
         </n-card>
       </n-gi>
       <n-gi>
-        <n-card size="small" :bordered="false" class="summary-card">
+        <n-card size="small" hoverable class="summary-card">
           <div class="summary-label">在线 Broker</div>
           <div class="summary-value is-success">{{ summary.onlineBrokers }}</div>
         </n-card>
       </n-gi>
       <n-gi>
-        <n-card size="small" :bordered="false" class="summary-card">
+        <n-card size="small" hoverable class="summary-card">
           <div class="summary-label">告警 Broker</div>
           <div class="summary-value is-warning">{{ summary.warningBrokers }}</div>
         </n-card>
       </n-gi>
       <n-gi>
-        <n-card size="small" :bordered="false" class="summary-card">
+        <n-card size="small" hoverable class="summary-card">
+          <div class="summary-label">离线 Broker</div>
+          <div class="summary-value is-error">{{ summary.offlineBrokers }}</div>
+        </n-card>
+      </n-gi>
+      <n-gi>
+        <n-card size="small" hoverable class="summary-card">
           <div class="summary-label">平均磁盘水位</div>
           <div class="summary-value is-info">{{ summary.avgDiskUsage }}%</div>
         </n-card>
@@ -448,44 +691,28 @@ const columns: DataTableColumns<BrokerNode> = [
 
     <n-card :bordered="false" class="panel-card toolbar-card">
       <n-space align="center" wrap :size="10">
-        <n-select
-          v-model:value="selectedCluster"
-          clearable
-          :options="clusterOptions"
-          placeholder="筛选集群"
-          style="width: 180px"
-        />
-        <n-select
-          v-model:value="selectedStatus"
-          clearable
-          :options="statusOptions"
-          placeholder="筛选状态"
-          style="width: 140px"
-        />
-        <n-input
-          v-model:value="keyword"
-          clearable
-          placeholder="搜索 Broker 名称 / 地址 / 版本"
-          style="width: 280px"
-        />
+        <n-select v-model:value="selectedCluster" clearable :options="clusterOptions" placeholder="筛选集群"
+          style="width: 180px" />
+        <n-select v-model:value="selectedStatus" clearable :options="statusOptions" placeholder="筛选状态"
+          style="width: 140px" />
+        <n-input v-model:value="keyword" clearable placeholder="搜索 Broker 名称 / 地址 / 版本" style="width: 280px" />
         <n-button type="primary" @click="handleSearch">查询</n-button>
         <n-button @click="handleReset">重置</n-button>
         <n-button quaternary @click="handleRefreshRuntime()">刷新全部状态</n-button>
+        <n-button :type="autoRefreshEnabled ? 'success' : 'default'" quaternary @click="handleToggleAutoRefresh">
+          {{ autoRefreshEnabled ? '自动刷新中' : '自动刷新已关闭' }}
+        </n-button>
+        <n-tag size="small" :type="autoRefreshEnabled ? 'success' : 'default'" round>
+          最近刷新：{{ lastRefreshAt }}
+        </n-tag>
       </n-space>
     </n-card>
 
     <n-grid responsive="screen" cols="1 xl:3" :x-gap="12" :y-gap="12" class="main-grid">
       <n-gi :span="2">
         <n-card :bordered="false" class="panel-card table-card" title="Broker 列表">
-          <n-data-table
-            :columns="columns"
-            :data="filteredBrokers"
-            :row-key="(row: BrokerNode) => row.id"
-            size="small"
-            striped
-            max-height="560"
-            flex-height
-          />
+          <n-data-table :columns="columns" :data="filteredBrokers" :row-key="(row: BrokerNode) => row.id" size="small"
+            striped max-height="560" flex-height :single-line="true" :scroll-x="tableScrollX" />
         </n-card>
       </n-gi>
 
@@ -513,14 +740,9 @@ const columns: DataTableColumns<BrokerNode> = [
               <span>TPS: {{ item.totalTpsIn }} / {{ item.totalTpsOut }}</span>
               <span>告警: {{ item.warningCount }}</span>
             </div>
-            <n-progress
-              type="line"
-              :percentage="item.avgCommitLog"
+            <n-progress type="line" :percentage="item.avgCommitLog"
               :status="item.avgCommitLog >= 80 ? 'error' : item.avgCommitLog >= 70 ? 'warning' : 'success'"
-              :show-indicator="false"
-              :height="7"
-              rail-color="rgba(128,128,128,0.14)"
-            />
+              :show-indicator="false" :height="7" rail-color="rgba(128,128,128,0.14)" />
           </div>
         </n-card>
       </n-gi>
@@ -552,6 +774,18 @@ const columns: DataTableColumns<BrokerNode> = [
             <n-descriptions-item label="更新时间">{{ currentBroker.lastUpdate }}</n-descriptions-item>
           </n-descriptions>
 
+          <n-card title="TPS 趋势（近 1 分钟）" size="small" :bordered="false" class="detail-block">
+            <div class="detail-trend-legend">
+              <span class="legend-item is-in">In</span>
+              <span class="legend-item is-out">Out</span>
+              <span class="legend-tip">每 5 秒采样一次</span>
+            </div>
+            <svg viewBox="0 0 100 28" preserveAspectRatio="none" class="detail-sparkline-svg">
+              <polyline :points="currentBrokerInPoints" class="sparkline-in" />
+              <polyline :points="currentBrokerOutPoints" class="sparkline-out" />
+            </svg>
+          </n-card>
+
           <n-card title="运行指标" size="small" :bordered="false" class="detail-block">
             <div class="detail-metric-row">
               <span>实时 TPS</span>
@@ -569,24 +803,16 @@ const columns: DataTableColumns<BrokerNode> = [
               <span>CommitLog 水位</span>
               <span>{{ currentBroker.commitLogDiskUsage }}%</span>
             </div>
-            <n-progress
-              type="line"
-              :percentage="currentBroker.commitLogDiskUsage"
+            <n-progress type="line" :percentage="currentBroker.commitLogDiskUsage"
               :status="currentBroker.commitLogDiskUsage >= 80 ? 'error' : currentBroker.commitLogDiskUsage >= 70 ? 'warning' : 'success'"
-              :show-indicator="false"
-              :height="8"
-            />
+              :show-indicator="false" :height="8" />
             <div class="detail-metric-row disk-row">
               <span>ConsumeQueue 水位</span>
               <span>{{ currentBroker.consumeQueueDiskUsage }}%</span>
             </div>
-            <n-progress
-              type="line"
-              :percentage="currentBroker.consumeQueueDiskUsage"
+            <n-progress type="line" :percentage="currentBroker.consumeQueueDiskUsage"
               :status="currentBroker.consumeQueueDiskUsage >= 80 ? 'error' : currentBroker.consumeQueueDiskUsage >= 70 ? 'warning' : 'success'"
-              :show-indicator="false"
-              :height="8"
-            />
+              :show-indicator="false" :height="8" />
           </n-card>
 
           <n-card title="备注" size="small" :bordered="false" class="detail-block">
@@ -602,19 +828,21 @@ const columns: DataTableColumns<BrokerNode> = [
 .cluster-page {
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: 16px;
 }
 
-.page-hint {
-  border-radius: 10px;
+.summary-grid {
+  margin-top: 2px;
 }
 
 .summary-card,
 .panel-card {
-  border-radius: 12px;
+  border-radius: 5px;
   background: var(--surface-2, #fff);
-  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.03);
 }
+
+.summary-card {}
+
 
 .summary-label {
   font-size: 12px;
@@ -637,6 +865,10 @@ const columns: DataTableColumns<BrokerNode> = [
   color: #f0a020;
 }
 
+.summary-value.is-error {
+  color: #d03050;
+}
+
 .summary-value.is-info {
   color: #2080f0;
 }
@@ -654,7 +886,7 @@ const columns: DataTableColumns<BrokerNode> = [
   min-height: 420px;
 }
 
-.side-card + .side-card {
+.side-card+.side-card {
   margin-top: 12px;
 }
 
@@ -664,7 +896,7 @@ const columns: DataTableColumns<BrokerNode> = [
   background: var(--surface-1, #f8f8f8);
 }
 
-.namesrv-item + .namesrv-item {
+.namesrv-item+.namesrv-item {
   margin-top: 10px;
 }
 
@@ -696,7 +928,7 @@ const columns: DataTableColumns<BrokerNode> = [
   background: var(--surface-1, #f8f8f8);
 }
 
-.cluster-runtime-item + .cluster-runtime-item {
+.cluster-runtime-item+.cluster-runtime-item {
   margin-top: 10px;
 }
 
@@ -736,19 +968,76 @@ const columns: DataTableColumns<BrokerNode> = [
   color: var(--text-muted, #888);
 }
 
-.disk-cell {
-  min-width: 132px;
-}
-
 .mono-text {
   font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', monospace;
   font-size: 12px;
+}
+
+.trend-cell {
+  min-width: 142px;
+}
+
+.sparkline-svg,
+.detail-sparkline-svg {
+  width: 100%;
+  height: 28px;
+  display: block;
+}
+
+.sparkline-in,
+.sparkline-out {
+  fill: none;
+  stroke-width: 1.9;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.sparkline-in {
+  stroke: #18a058;
+}
+
+.sparkline-out {
+  stroke: #2080f0;
+}
+
+.trend-meta {
+  margin-top: 2px;
+  font-size: 12px;
+  color: var(--text-muted, #888);
 }
 
 .detail-block {
   margin-top: 12px;
   border-radius: 10px;
   background: var(--surface-1, #f8f8f8);
+}
+
+.detail-trend-legend {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 8px;
+}
+
+.legend-item {
+  font-size: 12px;
+  padding: 2px 8px;
+  border-radius: 999px;
+  color: #fff;
+}
+
+.legend-item.is-in {
+  background: #18a058;
+}
+
+.legend-item.is-out {
+  background: #2080f0;
+}
+
+.legend-tip {
+  margin-left: auto;
+  font-size: 12px;
+  color: var(--text-muted, #888);
 }
 
 .detail-metric-row {

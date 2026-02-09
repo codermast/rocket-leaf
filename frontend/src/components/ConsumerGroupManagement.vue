@@ -1,7 +1,6 @@
 <script setup lang="ts">
 import { computed, h, ref } from 'vue'
 import {
-  NAlert,
   NButton,
   NCard,
   NDataTable,
@@ -317,10 +316,14 @@ const saveGroup = async () => {
   showEditor.value = false
 }
 
+const tableScrollX = 1460
+
 const columns: DataTableColumns<ConsumerGroupItem> = [
   {
     title: '消费者组',
     key: 'group',
+    minWidth: 170,
+    ellipsis: { tooltip: true },
     render: (row) => h('span', { class: 'group-name' }, row.group)
   },
   { title: '集群', key: 'cluster', width: 120 },
@@ -374,31 +377,27 @@ const columns: DataTableColumns<ConsumerGroupItem> = [
 
 <template>
   <div class="consumer-page">
-    <n-alert type="info" :show-icon="false" class="page-hint">
-      当前为消费者组管理前端模拟页，支持筛选、详情、创建/编辑、重置位点与删除流程。
-    </n-alert>
-
-    <n-grid responsive="screen" cols="1 s:2 l:4" :x-gap="12" :y-gap="12">
+    <n-grid responsive="screen" class="summary-grid" cols="1 s:4 l:4" :x-gap="12" :y-gap="12">
       <n-gi>
-        <n-card size="small" :bordered="false" class="summary-card">
+        <n-card size="small" hoverable class="summary-card">
           <div class="summary-label">消费者组总数</div>
           <div class="summary-value">{{ summary.total }}</div>
         </n-card>
       </n-gi>
       <n-gi>
-        <n-card size="small" :bordered="false" class="summary-card">
+        <n-card size="small" hoverable class="summary-card">
           <div class="summary-label">在线组</div>
           <div class="summary-value success">{{ summary.online }}</div>
         </n-card>
       </n-gi>
       <n-gi>
-        <n-card size="small" :bordered="false" class="summary-card">
+        <n-card size="small" hoverable class="summary-card">
           <div class="summary-label">告警组</div>
           <div class="summary-value warning">{{ summary.warning }}</div>
         </n-card>
       </n-gi>
       <n-gi>
-        <n-card size="small" :bordered="false" class="summary-card">
+        <n-card size="small" hoverable class="summary-card">
           <div class="summary-label">总堆积量</div>
           <div class="summary-value">{{ summary.totalLag }}</div>
         </n-card>
@@ -407,21 +406,18 @@ const columns: DataTableColumns<ConsumerGroupItem> = [
 
     <n-card :bordered="false" class="table-card">
       <div class="toolbar">
-        <n-space>
+        <n-space wrap>
           <n-button type="primary" @click="openCreate">创建消费者组</n-button>
           <n-input v-model:value="keyword" clearable placeholder="搜索组名 / Topic" style="width: 220px;" />
-          <n-select v-model:value="selectedCluster" clearable :options="clusterOptions" placeholder="集群筛选" style="width: 140px;" />
-          <n-select v-model:value="selectedStatus" clearable :options="statusOptions" placeholder="状态筛选" style="width: 120px;" />
+          <n-select v-model:value="selectedCluster" clearable :options="clusterOptions" placeholder="集群筛选"
+            style="width: 140px;" />
+          <n-select v-model:value="selectedStatus" clearable :options="statusOptions" placeholder="状态筛选"
+            style="width: 120px;" />
         </n-space>
       </div>
 
-      <n-data-table
-        :columns="columns"
-        :data="filteredGroups"
-        :pagination="{ pageSize: 10 }"
-        :single-line="false"
-        size="small"
-      />
+      <n-data-table :columns="columns" :data="filteredGroups" :pagination="{ pageSize: 10 }" :single-line="true"
+        :scroll-x="tableScrollX" size="small" />
     </n-card>
 
     <n-drawer v-model:show="showDetail" :width="680" placement="right" :trap-focus="false">
@@ -432,7 +428,8 @@ const columns: DataTableColumns<ConsumerGroupItem> = [
             <n-descriptions-item label="集群">{{ currentGroup.cluster }}</n-descriptions-item>
             <n-descriptions-item label="消费模式">{{ currentGroup.consumeMode }}</n-descriptions-item>
             <n-descriptions-item label="状态">
-              <n-tag size="small" round :type="getStatusTagType(currentGroup.status)">{{ getStatusText(currentGroup.status) }}</n-tag>
+              <n-tag size="small" round :type="getStatusTagType(currentGroup.status)">{{
+                getStatusText(currentGroup.status) }}</n-tag>
             </n-descriptions-item>
             <n-descriptions-item label="在线客户端">{{ currentGroup.onlineClients }}</n-descriptions-item>
             <n-descriptions-item label="最大重试">{{ currentGroup.maxRetry }}</n-descriptions-item>
@@ -489,12 +486,8 @@ const columns: DataTableColumns<ConsumerGroupItem> = [
       </n-drawer-content>
     </n-drawer>
 
-    <n-modal
-      v-model:show="showEditor"
-      preset="card"
-      :style="{ width: '640px', maxWidth: 'calc(100vw - 32px)' }"
-      :title="editingId ? '编辑消费者组' : '创建消费者组'"
-    >
+    <n-modal v-model:show="showEditor" preset="card" :style="{ width: '640px', maxWidth: 'calc(100vw - 32px)' }"
+      :title="editingId ? '编辑消费者组' : '创建消费者组'">
       <n-form ref="formRef" :model="formModel" :rules="formRules" label-placement="left" label-width="110">
         <n-form-item label="组名" path="group">
           <n-input v-model:value="formModel.group" placeholder="例如：order_group" :disabled="editingId !== null" />
@@ -540,18 +533,20 @@ const columns: DataTableColumns<ConsumerGroupItem> = [
 .consumer-page {
   display: flex;
   flex-direction: column;
-  gap: 14px;
+  gap: 16px;
 }
 
-.page-hint {
-  border-radius: 10px;
+.summary-grid {
+  margin-top: 2px;
 }
 
 .summary-card,
 .table-card {
   background: var(--surface-2, #fff);
-  border-radius: 12px;
+  border-radius: 5px;
 }
+
+.summary-card {}
 
 .summary-label {
   font-size: 13px;

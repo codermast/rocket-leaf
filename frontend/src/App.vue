@@ -1,6 +1,21 @@
 <script setup lang="ts">
-import { ref, watchEffect } from 'vue'
-import { NLayout, NLayoutContent, NConfigProvider, NGlobalStyle, NModal, NCard, NButton, NSpace, NMessageProvider, darkTheme } from 'naive-ui'
+import { computed, onMounted, onUnmounted, reactive, ref, watch, watchEffect } from 'vue'
+import {
+  NLayout,
+  NLayoutContent,
+  NConfigProvider,
+  NGlobalStyle,
+  NModal,
+  NCard,
+  NButton,
+  NSpace,
+  NMessageProvider,
+  NForm,
+  NFormItem,
+  NRadioGroup,
+  NRadio,
+  darkTheme
+} from 'naive-ui'
 import TitleBar from './components/TitleBar.vue'
 import Sidebar from './components/Sidebar.vue'
 import ContentTopBar from './components/ContentTopBar.vue'
@@ -11,28 +26,50 @@ import ConsumerGroupManagement from './components/ConsumerGroupManagement.vue'
 import MessageQuery from './components/MessageQuery.vue'
 import ClusterStatus from './components/ClusterStatus.vue'
 
-// 当前选中的页面
+type ThemeMode = 'light' | 'dark' | 'system'
+
+interface AppSettings {
+  themeMode: ThemeMode
+}
+
+const SETTINGS_STORAGE_KEY = 'rocket-leaf.app.settings'
+
+const DEFAULT_SETTINGS: AppSettings = {
+  themeMode: 'light',
+}
+
 const currentPage = ref('dashboard')
-
-// 主题切换
-const isDark = ref(false)
 const showSettings = ref(false)
+const systemPrefersDark = ref(false)
 
+const settings = reactive<AppSettings>({ ...DEFAULT_SETTINGS })
+
+let mediaQuery: MediaQueryList | undefined
+let mediaQueryListener: ((event: MediaQueryListEvent) => void) | undefined
 let themeTransitionTimer: number | undefined
 const themeTransitionClass = 'theme-switching'
 
-const toggleTheme = () => {
-  if (typeof document !== 'undefined') {
-    const root = document.documentElement
-    root.classList.add(themeTransitionClass)
-    if (themeTransitionTimer) {
-      window.clearTimeout(themeTransitionTimer)
-    }
-    themeTransitionTimer = window.setTimeout(() => {
-      root.classList.remove(themeTransitionClass)
-    }, 180)
+const isDark = computed(() => {
+  if (settings.themeMode === 'dark') return true
+  if (settings.themeMode === 'light') return false
+  return systemPrefersDark.value
+})
+
+const applyThemeTransition = () => {
+  if (typeof document === 'undefined') return
+  const root = document.documentElement
+  root.classList.add(themeTransitionClass)
+  if (themeTransitionTimer) {
+    window.clearTimeout(themeTransitionTimer)
   }
-  isDark.value = !isDark.value
+  themeTransitionTimer = window.setTimeout(() => {
+    root.classList.remove(themeTransitionClass)
+  }, 180)
+}
+
+const toggleTheme = () => {
+  applyThemeTransition()
+  settings.themeMode = isDark.value ? 'light' : 'dark'
 }
 
 const handlePageChange = (key: string) => {
@@ -47,6 +84,53 @@ const handlePageChange = (key: string) => {
 const openSettings = () => {
   showSettings.value = true
 }
+
+const resetSettings = () => {
+  Object.assign(settings, DEFAULT_SETTINGS)
+}
+
+const loadSettings = () => {
+  if (typeof window === 'undefined') return
+
+  const cached = window.localStorage.getItem(SETTINGS_STORAGE_KEY)
+  if (cached) {
+    try {
+      const parsed = JSON.parse(cached) as Partial<AppSettings>
+      if (parsed.themeMode === 'light' || parsed.themeMode === 'dark' || parsed.themeMode === 'system') {
+        settings.themeMode = parsed.themeMode
+      }
+    } catch {
+      Object.assign(settings, DEFAULT_SETTINGS)
+    }
+  }
+}
+
+onMounted(() => {
+  loadSettings()
+
+  if (typeof window !== 'undefined' && typeof window.matchMedia === 'function') {
+    mediaQuery = window.matchMedia('(prefers-color-scheme: dark)')
+    systemPrefersDark.value = mediaQuery.matches
+    mediaQueryListener = (event: MediaQueryListEvent) => {
+      systemPrefersDark.value = event.matches
+    }
+    mediaQuery.addEventListener('change', mediaQueryListener)
+  }
+})
+
+onUnmounted(() => {
+  if (themeTransitionTimer) {
+    window.clearTimeout(themeTransitionTimer)
+  }
+  if (mediaQuery && mediaQueryListener) {
+    mediaQuery.removeEventListener('change', mediaQueryListener)
+  }
+})
+
+watch(settings, (value) => {
+  if (typeof window === 'undefined') return
+  window.localStorage.setItem(SETTINGS_STORAGE_KEY, JSON.stringify(value))
+}, { deep: true })
 
 watchEffect(() => {
   if (typeof document !== 'undefined') {
@@ -64,9 +148,7 @@ watchEffect(() => {
         <n-layout has-sider class="main-layout">
           <Sidebar @update:currentPage="handlePageChange" @open:settings="openSettings" />
           <n-layout class="content-wrapper">
-            <!-- 内容区域顶部导航 -->
             <ContentTopBar :currentPage="currentPage" :isDark="isDark" @toggle-theme="toggleTheme" />
-            <!-- 主内容区域 -->
             <n-layout-content class="content">
               <DashboardContent v-if="currentPage === 'dashboard'" />
               <ConnectionManagement v-else-if="currentPage === 'connections'" />
@@ -84,16 +166,28 @@ watchEffect(() => {
         </n-layout>
       </div>
 
-      <!-- 设置弹窗 -->
       <n-modal v-model:show="showSettings" :mask-closable="true" :auto-focus="false">
-        <n-card title="设置" size="small" class="settings-card" :bordered="false">
+        <n-card title="系统设置" size="small" class="settings-card" :bordered="false">
           <div class="settings-body">
-            <div class="settings-title">基础设置</div>
-            <div class="settings-desc">更多配置项后续补充</div>
+            <n-form label-placement="left" label-width="96" :show-feedback="false">
+              <n-form-item label="主题模式">
+                <n-radio-group v-model:value="settings.themeMode">
+                  <n-space>
+                    <n-radio value="light">浅色</n-radio>
+                    <n-radio value="dark">深色</n-radio>
+                    <n-radio value="system">跟随系统</n-radio>
+                  </n-space>
+                </n-radio-group>
+              </n-form-item>
+            </n-form>
           </div>
+
           <template #footer>
-            <n-space justify="end">
-              <n-button @click="showSettings = false">关闭</n-button>
+            <n-space justify="space-between">
+              <n-button quaternary @click="resetSettings">恢复默认</n-button>
+              <n-space>
+                <n-button @click="showSettings = false">关闭</n-button>
+              </n-space>
             </n-space>
           </template>
         </n-card>
@@ -148,23 +242,13 @@ watchEffect(() => {
 }
 
 .settings-card {
-  width: 420px;
-  border-radius: 10px;
+  width: 560px;
+  max-width: calc(100vw - 24px);
+  border-radius: 12px;
 }
 
 .settings-body {
   padding: 4px 0 8px;
   color: var(--text-color, #333);
-}
-
-.settings-title {
-  font-size: 14px;
-  font-weight: 600;
-}
-
-.settings-desc {
-  margin-top: 6px;
-  font-size: 12px;
-  color: var(--text-muted, #888);
 }
 </style>
