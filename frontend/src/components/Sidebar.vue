@@ -3,7 +3,7 @@
 // 使用 Naive UI 和 Ionicons5 图标构建的左侧边栏
 import { ref, h, computed } from 'vue'
 import type { Component } from 'vue'
-import { NMenu, NIcon, NLayoutSider, NTooltip, NPopover } from 'naive-ui'
+import { NMenu, NIcon, NLayoutSider, NTooltip, NDropdown, NAvatar, NText, NBadge } from 'naive-ui'
 import type { MenuOption } from 'naive-ui'
 import {
     SpeedometerOutline,
@@ -14,24 +14,16 @@ import {
     ServerOutline,
     SettingsOutline,
     ChevronDownOutline,
-    CheckmarkOutline,
     AddOutline,
     LogoGithub,
-    OpenOutline
+    OpenOutline,
 } from '@vicons/ionicons5'
+import { render } from 'naive-ui/es/_utils'
 
 // 渲染图标的辅助函数
 const renderIcon = (icon: Component) => {
     return () => h(NIcon, null, { default: () => h(icon) })
 }
-
-// Tooltip 统一样式（移除默认黑底，使用自定义面板）
-const tooltipContentStyle = {
-    padding: '0',
-    backgroundColor: 'transparent',
-    border: 'none',
-    boxShadow: 'none'
-} as const
 
 // RocketMQ 图标（来自 Iconify 的 simple-icons:apacherocketmq）
 const RocketMQIcon = {
@@ -46,8 +38,8 @@ const collapsed = ref(false)
 // 当前选中的菜单项
 const activeKey = ref<string>('dashboard')
 
-// 连接弹窗显示状态
-const showConnectionPopover = ref(false)
+// 连接下拉显示状态
+const showConnectionDropdown = ref(false)
 
 // RocketMQ 实例列表（模拟数据）
 interface Instance {
@@ -55,19 +47,21 @@ interface Instance {
     value: string
     ip: string
     status: 'online' | 'offline'  // 连接状态
+    icon: Component
 }
 
 const fallbackInstance: Instance = {
     label: '未连接实例',
     value: 'fallback',
     ip: '-',
-    status: 'offline'
+    status: 'offline',
+    icon: PeopleOutline
 }
 
 const instances = ref<Instance[]>([
-    { label: '生产环境', value: 'prod', ip: '192.168.1.100:9876', status: 'online' },
-    { label: '测试环境', value: 'test', ip: '192.168.1.101:9876', status: 'online' },
-    { label: '开发环境', value: 'dev', ip: 'localhost:9876', status: 'offline' }
+    { label: '生产环境', value: 'prod', ip: '192.168.1.100:9876', status: 'online', icon: PeopleOutline },
+    { label: '测试环境', value: 'test', ip: '192.168.1.101:9876', status: 'online', icon: LogoGithub },
+    { label: '开发环境', value: 'dev', ip: 'localhost:9876', status: 'offline', icon: SpeedometerOutline }
 ])
 
 // 当前选中的实例
@@ -81,14 +75,100 @@ const currentInstance = computed<Instance>(() => {
 // 选择实例
 const selectInstance = (value: string) => {
     selectedInstance.value = value
-    showConnectionPopover.value = false
 }
 
 // 添加新连接
 const addNewConnection = () => {
-    showConnectionPopover.value = false
     // TODO: 打开添加连接对话框
     console.log('Add new connection')
+}
+
+const addConnectionKey = '__add_connection__'
+
+const handleConnectionItemClick = (value: string) => {
+    selectInstance(value)
+    showConnectionDropdown.value = false
+}
+
+const renderConnectionDropdownHeader = () => {
+    return h(
+        'div',
+        {
+            style: 'display: flex; align-items: center; padding: 8px 12px;'
+        },
+        [
+            h(NAvatar, {
+                round: true,
+                style: 'margin-right: 12px;',
+                src: 'https://07akioni.oss-cn-beijing.aliyuncs.com/demo1.JPG'
+            }),
+            h('div', null, [
+                h('div', null, [h(NText, { depth: 2 }, { default: () => 'RocketMQ 集群列表' })]),
+                h('div', { style: 'font-size: 12px;' }, [
+                    h(
+                        NText,
+                        { depth: 3 },
+                        { default: () => '选择 RocketMQ 实例集群' }
+                    )
+                ])
+            ])
+        ]
+    )
+}
+
+// const renderConnectionOptionCard = (instance: Instance) => {
+//     const isSelected = selectedInstance.value === instance.value
+//     return h('div', { style: 'color: blue;' }, '特殊蓝字选项')
+// }
+
+const connectionDropdownOptions = computed(() => {
+    const instanceOptions = instances.value.map((instance) => ({
+        key: instance.value,
+        label: () =>
+            h('div', { style: 'display: flex; align-items: center; gap: 8px;' }, [
+                // 实例名称
+                h('span', null, instance.label),
+                // 状态标签
+                h(NBadge, {
+                    value: instance.status === 'online' ? '在线' : '离线',
+                    type: instance.status === 'online' ? 'success' : 'error',
+                    // 如果你只想要个小圆点，不想要文字，可以用 dot 属性
+                    // dot: true 
+                })]),
+        icon: renderIcon(instance.icon)
+    }))
+
+    return [
+        {
+            key: 'connection-header',
+            type: 'render' as const,
+            render: renderConnectionDropdownHeader
+        },
+        {
+            type: 'divider',
+            key: 'connection-header-divider'
+        },
+        ...instanceOptions,
+        {
+            type: 'divider',
+            key: 'connection-action-divider'
+        },
+        {
+            key: addConnectionKey,
+            label: '添加新连接',
+            icon: renderIcon(AddOutline)
+        }
+    ]
+})
+
+const handleConnectionSelect = (key: string | number) => {
+    const selectedKey = String(key)
+    if (selectedKey === addConnectionKey) {
+        addNewConnection()
+        showConnectionDropdown.value = false
+        return
+    }
+    handleConnectionItemClick(selectedKey)
 }
 
 // 菜单选项 - 只保留一级导航
@@ -153,93 +233,46 @@ const openSettings = () => {
         show-trigger @collapse="collapsed = true" @expand="collapsed = false" class="sidebar">
         <!-- 实例选择器区域 -->
         <div class="instance-selector-wrapper">
-            <n-popover v-model:show="showConnectionPopover" trigger="click" placement="bottom-start" :show-arrow="false"
-                raw style="padding: 0;">
-                <template #trigger>
-                    <div class="instance-card" :class="{ collapsed }">
-                        <!-- 折叠状态：只显示图标 -->
-                        <template v-if="collapsed">
-                            <n-tooltip placement="right" :show-arrow="true">
-                                <template #trigger>
-                                    <div class="instance-card-icon-only">
-                                        <n-icon :size="20">
-                                            <RocketMQIcon />
-                                        </n-icon>
-                                        <span class="status-dot collapsed-dot" :class="currentInstance.status"></span>
-                                    </div>
-                                </template>
-                                <div>{{ currentInstance.label }}</div>
-                                <div>{{ currentInstance.ip }}</div>
-                            </n-tooltip>
-                        </template>
-
-
-                        <!-- 展开状态：显示卡片 -->
-                        <template v-else>
-                            <div class="instance-card-content">
-                                <div class="instance-card-icon">
+            <n-dropdown trigger="click" placement="bottom-start" :show-arrow="true" :options="connectionDropdownOptions"
+                v-model:show="showConnectionDropdown" :value="selectedInstance" @select="handleConnectionSelect">
+                <div class="instance-card" :class="{ collapsed }">
+                    <!-- 折叠状态：只显示图标 -->
+                    <template v-if="collapsed">
+                        <n-tooltip placement="right" :show-arrow="true">
+                            <template #trigger>
+                                <div class="instance-card-icon-only">
                                     <n-icon :size="20">
                                         <RocketMQIcon />
                                     </n-icon>
+                                    <span class="status-dot collapsed-dot" :class="currentInstance.status"></span>
                                 </div>
-                                <div class="instance-card-info">
-                                    <div class="instance-card-name">
-                                        {{ currentInstance.label }}
-                                        <span class="status-dot inline" :class="currentInstance.status"></span>
-                                    </div>
-                                </div>
-                                <n-icon :size="16" class="instance-card-arrow">
-                                    <ChevronDownOutline />
-                                </n-icon>
-                            </div>
-                        </template>
-                    </div>
-                </template>
+                            </template>
+                            <div>{{ currentInstance.label }}</div>
+                            <div>{{ currentInstance.ip }}</div>
+                        </n-tooltip>
+                    </template>
 
-                <!-- 下拉菜单内容 -->
-                <div class="connection-popover">
-                    <div class="popover-header">切换连接</div>
-
-                    <!-- 连接列表 -->
-                    <div class="connection-list">
-                        <div v-for="instance in instances" :key="instance.value" class="connection-item"
-                            :class="{ active: selectedInstance === instance.value }"
-                            @click="selectInstance(instance.value)">
-                            <div class="connection-icon">
-                                <n-icon :size="18">
+                    <!-- 展开状态：显示卡片 -->
+                    <template v-else>
+                        <div class="instance-card-content">
+                            <div class="instance-card-icon">
+                                <n-icon :size="20">
                                     <RocketMQIcon />
                                 </n-icon>
                             </div>
-                            <div class="connection-info">
-                                <div class="connection-name">{{ instance.label }}</div>
-                                <n-tooltip placement="right" :show-arrow="false" raw :content-style="tooltipContentStyle">
-                                    <template #trigger>
-                                        <div class="connection-ip">{{ instance.ip }}</div>
-                                    </template>
-                                    <div class="tooltip-panel">{{ instance.ip }}</div>
-                                </n-tooltip>
+                            <div class="instance-card-info">
+                                <div class="instance-card-name">
+                                    {{ currentInstance.label }}
+                                    <span class="status-dot inline" :class="currentInstance.status"></span>
+                                </div>
                             </div>
-                            <span class="status-dot" :class="instance.status"></span>
-                            <n-icon v-if="selectedInstance === instance.value" :size="16" class="check-icon">
-                                <CheckmarkOutline />
+                            <n-icon :size="16" class="instance-card-arrow">
+                                <ChevronDownOutline />
                             </n-icon>
                         </div>
-                    </div>
-
-                    <!-- 分隔线 -->
-                    <div class="popover-divider"></div>
-
-                    <!-- 添加新连接 -->
-                    <div class="add-connection" @click="addNewConnection">
-                        <div class="add-icon">
-                            <n-icon :size="16">
-                                <AddOutline />
-                            </n-icon>
-                        </div>
-                        <span>添加新连接</span>
-                    </div>
+                    </template>
                 </div>
-            </n-popover>
+            </n-dropdown>
         </div>
 
         <!-- 菜单 -->
@@ -623,131 +656,110 @@ const openSettings = () => {
     color: var(--text-muted, #888);
     margin-top: 1px;
 }
-</style>
 
-
-<style>
-/* 全局样式 - 下拉弹窗 */
-.connection-popover {
-    min-width: 260px;
-    background: var(--surface-2, #ffffff);
-    border-radius: 12px;
-    box-shadow: var(--popover-shadow, 0 8px 24px rgba(0, 0, 0, 0.12));
-    overflow: hidden;
+.connection-dropdown-header {
+    padding: 6px 4px;
 }
 
-.tooltip-panel {
-    background: var(--surface-2, #ffffff);
-    color: var(--text-color, #333);
-    border: 1px solid var(--border-color, rgba(0, 0, 0, 0.06));
-    box-shadow: var(--popover-shadow, 0 8px 24px rgba(0, 0, 0, 0.12));
-    border-radius: 10px;
-    padding: 8px 10px;
-}
-
-.popover-header {
-    padding: 12px 16px;
+.connection-dropdown-title {
     font-size: 13px;
+    font-weight: 600;
+    line-height: 1.2;
+    color: var(--text-color, #333);
+}
+
+.connection-dropdown-subtitle {
+    margin-top: 2px;
+    font-size: 12px;
+    line-height: 1.25;
     color: var(--text-muted, #888);
-    border-bottom: 1px solid var(--border-color, rgba(0, 0, 0, 0.06));
 }
 
-.connection-list {
-    padding: 8px;
-}
-
-.connection-item {
-    display: flex;
-    align-items: center;
-    padding: 10px 12px;
-    gap: 10px;
-    border-radius: 8px;
+.connection-option-card {
+    max-width: 300px;
+    min-width: 236px;
     cursor: pointer;
-    transition: background 0.15s;
 }
 
-.connection-item:hover {
-    background: var(--surface-2-hover, #f5f5f5);
+.connection-option-card :deep(.n-card__content) {
+    padding: 8px 10px;
+    border-radius: 10px;
+    border: 1px solid transparent;
+    transition: background-color 0.2s ease, border-color 0.2s ease;
 }
 
-.connection-item.active {
-    background: rgba(24, 160, 88, 0.08);
+.connection-option-card.is-selected :deep(.n-card__content) {
+    background: rgba(24, 160, 88, 0.1);
+    border-color: rgba(24, 160, 88, 0.24);
 }
 
-.connection-icon {
-    width: 32px;
-    height: 32px;
+.connection-option-content {
     display: flex;
     align-items: center;
-    justify-content: center;
-    border-radius: 6px;
-    background: var(--surface-3, #f0f0f0);
-    color: var(--text-secondary, #666);
-    flex-shrink: 0;
-}
-
-.connection-info {
-    flex: 1;
+    gap: 10px;
     min-width: 0;
 }
 
-.connection-name {
-    font-size: 14px;
-    font-weight: 500;
-    color: var(--text-color, #333);
+.connection-option-icon {
+    width: 30px;
+    height: 30px;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    color: #fff;
+    background: linear-gradient(135deg, #22c372 0%, #18a058 100%);
+    box-shadow: 0 2px 8px rgba(24, 160, 88, 0.22);
 }
 
-.connection-ip {
-    font-size: 12px;
-    color: var(--text-secondary, #666);
-    margin-top: 4px;
-    font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
-    letter-spacing: 0.2px;
-    background: var(--chip-bg, rgba(0, 0, 0, 0.04));
-    padding: 2px 6px;
-    border-radius: 6px;
-    display: block;
-    max-width: 100%;
+.connection-option-main {
+    min-width: 0;
+    flex: 1;
+}
+
+.connection-option-title-row {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    min-width: 0;
+}
+
+.connection-option-name {
+    min-width: 0;
+    font-size: 13px;
+    font-weight: 600;
+    line-height: 1.3;
+    color: var(--n-option-text-color, #303133);
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
 }
 
-.check-icon {
-    color: #18a058;
+.connection-option-status {
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
     flex-shrink: 0;
-    margin-left: 4px;
 }
 
-.popover-divider {
-    height: 1px;
-    background: var(--border-color, rgba(0, 0, 0, 0.06));
-    margin: 0 8px;
+.connection-option-status.is-online {
+    background: #18a058;
 }
 
-.add-connection {
-    display: flex;
-    align-items: center;
-    padding: 12px 16px;
-    gap: 10px;
-    cursor: pointer;
-    transition: background 0.15s;
-    color: #666;
-    font-size: 14px;
+.connection-option-status.is-offline {
+    background: #e88080;
 }
 
-.add-connection:hover {
-    background: var(--surface-2-hover, #f5f5f5);
-}
-
-.add-icon {
-    width: 32px;
-    height: 32px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    border-radius: 6px;
-    border: 1px dashed var(--add-icon-border, #ccc);
-    color: var(--text-muted, #999);
+.connection-option-ip {
+    margin-top: 2px;
+    font-size: 12px;
+    line-height: 1.25;
+    color: var(--n-option-text-color, #909399);
+    font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
+    letter-spacing: 0.2px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
 }
 </style>

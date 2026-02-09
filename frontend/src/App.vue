@@ -4,6 +4,7 @@ import { NLayout, NLayoutContent, NConfigProvider, NGlobalStyle, NModal, NCard, 
 import TitleBar from './components/TitleBar.vue'
 import Sidebar from './components/Sidebar.vue'
 import ContentTopBar from './components/ContentTopBar.vue'
+import DashboardContent from './components/DashboardContent.vue'
 
 // 当前选中的页面
 const currentPage = ref('dashboard')
@@ -13,16 +14,18 @@ const isDark = ref(false)
 const showSettings = ref(false)
 
 let themeTransitionTimer: number | undefined
+const themeTransitionClass = 'theme-switching'
 
 const toggleTheme = () => {
   if (typeof document !== 'undefined') {
-    document.documentElement.classList.add('theme-transition')
+    const root = document.documentElement
+    root.classList.add(themeTransitionClass)
     if (themeTransitionTimer) {
       window.clearTimeout(themeTransitionTimer)
     }
     themeTransitionTimer = window.setTimeout(() => {
-      document.documentElement.classList.remove('theme-transition')
-    }, 260)
+      root.classList.remove(themeTransitionClass)
+    }, 180)
   }
   isDark.value = !isDark.value
 }
@@ -59,10 +62,11 @@ watchEffect(() => {
           <ContentTopBar :currentPage="currentPage" :isDark="isDark" @toggle-theme="toggleTheme" />
           <!-- 主内容区域 -->
           <n-layout-content class="content">
-            <div class="placeholder">
-              <h1>Welcome to Rocket Leaf</h1>
-              <p>A lightweight RocketMQ client.</p>
-              <p>请从左侧菜单选择功能</p>
+            <DashboardContent v-if="currentPage === 'dashboard'" />
+            <div v-else class="placeholder">
+              <h1>功能开发中</h1>
+              <p>当前页面：{{ currentPage }}</p>
+              <p>请继续从左侧菜单切换</p>
             </div>
           </n-layout-content>
         </n-layout>
