@@ -1,11 +1,12 @@
 <script setup lang="ts">
 import { ref, watchEffect } from 'vue'
-import { NLayout, NLayoutContent, NConfigProvider, NGlobalStyle, NModal, NCard, NButton, NSpace, darkTheme } from 'naive-ui'
+import { NLayout, NLayoutContent, NConfigProvider, NGlobalStyle, NModal, NCard, NButton, NSpace, NMessageProvider, darkTheme } from 'naive-ui'
 import TitleBar from './components/TitleBar.vue'
 import Sidebar from './components/Sidebar.vue'
 import ContentTopBar from './components/ContentTopBar.vue'
 import DashboardContent from './components/DashboardContent.vue'
 import ConnectionManagement from './components/ConnectionManagement.vue'
+import TopicManagement from './components/TopicManagement.vue'
 
 // 当前选中的页面
 const currentPage = ref('dashboard')
@@ -54,41 +55,44 @@ watchEffect(() => {
 <template>
   <n-config-provider :theme="isDark ? darkTheme : null">
     <n-global-style />
-    <div class="app-container">
-      <TitleBar />
-      <n-layout has-sider class="main-layout">
-        <Sidebar @update:currentPage="handlePageChange" @open:settings="openSettings" />
-        <n-layout class="content-wrapper">
-          <!-- 内容区域顶部导航 -->
-          <ContentTopBar :currentPage="currentPage" :isDark="isDark" @toggle-theme="toggleTheme" />
-          <!-- 主内容区域 -->
-          <n-layout-content class="content">
-            <DashboardContent v-if="currentPage === 'dashboard'" />
-            <ConnectionManagement v-else-if="currentPage === 'connections'" />
-            <div v-else class="placeholder">
-              <h1>功能开发中</h1>
-              <p>当前页面：{{ currentPage }}</p>
-              <p>请继续从左侧菜单切换</p>
-            </div>
-          </n-layout-content>
+    <n-message-provider>
+      <div class="app-container">
+        <TitleBar />
+        <n-layout has-sider class="main-layout">
+          <Sidebar @update:currentPage="handlePageChange" @open:settings="openSettings" />
+          <n-layout class="content-wrapper">
+            <!-- 内容区域顶部导航 -->
+            <ContentTopBar :currentPage="currentPage" :isDark="isDark" @toggle-theme="toggleTheme" />
+            <!-- 主内容区域 -->
+            <n-layout-content class="content">
+              <DashboardContent v-if="currentPage === 'dashboard'" />
+              <ConnectionManagement v-else-if="currentPage === 'connections'" />
+              <TopicManagement v-else-if="currentPage === 'topics'" />
+              <div v-else class="placeholder">
+                <h1>功能开发中</h1>
+                <p>当前页面：{{ currentPage }}</p>
+                <p>请继续从左侧菜单切换</p>
+              </div>
+            </n-layout-content>
+          </n-layout>
         </n-layout>
-      </n-layout>
-    </div>
+      </div>
 
-    <!-- 设置弹窗 -->
-    <n-modal v-model:show="showSettings" :mask-closable="true" :auto-focus="false">
-      <n-card title="设置" size="small" class="settings-card" :bordered="false">
-        <div class="settings-body">
-          <div class="settings-title">基础设置</div>
-          <div class="settings-desc">更多配置项后续补充</div>
-        </div>
-        <template #footer>
-          <n-space justify="end">
-            <n-button @click="showSettings = false">关闭</n-button>
-          </n-space>
-        </template>
-      </n-card>
-    </n-modal>
+      <!-- 设置弹窗 -->
+      <n-modal v-model:show="showSettings" :mask-closable="true" :auto-focus="false">
+        <n-card title="设置" size="small" class="settings-card" :bordered="false">
+          <div class="settings-body">
+            <div class="settings-title">基础设置</div>
+            <div class="settings-desc">更多配置项后续补充</div>
+          </div>
+          <template #footer>
+            <n-space justify="end">
+              <n-button @click="showSettings = false">关闭</n-button>
+            </n-space>
+          </template>
+        </n-card>
+      </n-modal>
+    </n-message-provider>
   </n-config-provider>
 </template>
 

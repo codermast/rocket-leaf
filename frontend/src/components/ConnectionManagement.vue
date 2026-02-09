@@ -15,7 +15,8 @@ import {
   NPopconfirm,
   NSelect,
   NSpace,
-  NTag
+  NTag,
+  useMessage
 } from 'naive-ui'
 import type { DataTableColumns, FormInst, FormRules } from 'naive-ui'
 
@@ -99,6 +100,7 @@ const isSubmitting = ref(false)
 const editingId = ref<number | null>(null)
 const testingIds = ref<number[]>([])
 const formRef = ref<FormInst | null>(null)
+const message = useMessage()
 
 const createDefaultFormModel = (): ConnectionFormModel => ({
   name: '',
@@ -168,6 +170,7 @@ const setAsDefault = (id: number) => {
 }
 
 const deleteConnection = (id: number) => {
+  const removed = connectionList.value.find(item => item.id === id)
   connectionList.value = connectionList.value.filter(item => item.id !== id)
   if (!connectionList.value.some(item => item.isDefault) && connectionList.value.length > 0) {
     const firstConnection = connectionList.value[0]
@@ -175,6 +178,7 @@ const deleteConnection = (id: number) => {
       firstConnection.isDefault = true
     }
   }
+  message.success(`已删除连接：${removed?.name ?? id}`)
 }
 
 const formatNow = () => {
@@ -342,7 +346,13 @@ const columns: DataTableColumns<ConnectionItem> = [
       />
     </n-card>
 
-    <n-modal v-model:show="showEditor" preset="card" class="editor-modal" :title="editingId ? '编辑连接' : '新增连接'">
+    <n-modal
+      v-model:show="showEditor"
+      preset="card"
+      class="editor-modal"
+      :style="{ width: '560px', maxWidth: 'calc(100vw - 32px)' }"
+      :title="editingId ? '编辑连接' : '新增连接'"
+    >
       <n-form ref="formRef" :model="formModel" :rules="formRules" label-placement="left" label-width="90">
         <n-form-item label="连接名称" path="name">
           <n-input v-model:value="formModel.name" placeholder="例如：生产集群" />
@@ -441,10 +451,6 @@ const columns: DataTableColumns<ConnectionItem> = [
   display: flex;
   align-items: center;
   gap: 8px;
-}
-
-.editor-modal {
-  width: 560px;
 }
 
 .editor-actions {
