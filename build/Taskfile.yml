@@ -5,7 +5,7 @@ tasks:
     summary: Runs `go mod tidy`
     internal: true
     cmds:
-      - go mod tidy
+      - env -u GOROOT go mod tidy
 
   install:frontend:deps:
     summary: Install frontend dependencies
@@ -19,7 +19,7 @@ tasks:
       - sh: npm version
         msg: "Looks like npm isn't installed. Npm is part of the Node installer: https://nodejs.org/en/download/"
     cmds:
-      - npm install
+      - npm install --no-audit --no-fund
 
   build:frontend:
     label: build:frontend (DEV={{.DEV}})
@@ -111,8 +111,6 @@ tasks:
   dev:frontend:
     summary: Runs the frontend in development mode
     dir: frontend
-    deps:
-      - task: install:frontend:deps
     cmds:
       - npm run dev -- --port {{.VITE_PORT}} --strictPort
 
@@ -134,7 +132,7 @@ tasks:
           BUILD_FLAGS:
             ref: .BUILD_FLAGS
     cmds:
-      - go build -tags server {{.BUILD_FLAGS}} -o {{.BIN_DIR}}/{{.APP_NAME}}-server{{exeExt}}
+      - env -u GOROOT go build -tags server {{.BUILD_FLAGS}} -o {{.BIN_DIR}}/{{.APP_NAME}}-server{{exeExt}}
     vars:
       BUILD_FLAGS: "{{.BUILD_FLAGS}}"
 

@@ -9,6 +9,7 @@ import {
   NDescriptionsItem,
   NDrawer,
   NDrawerContent,
+  NEmpty,
   NForm,
   NFormItem,
   NGrid,
@@ -22,6 +23,8 @@ import {
 } from 'naive-ui'
 import type { DataTableColumns } from 'naive-ui'
 import { CopyOutline, EyeOutline, RefreshOutline, SearchOutline } from '@vicons/ionicons5'
+import * as MessageService from '../../bindings/rocket-leaf/internal/service/messageservice'
+import type { MessageItem as BackendMessageItem } from '../../bindings/rocket-leaf/internal/model/models'
 
 type MessageStatus = 'normal' | 'retry' | 'dlq'
 
@@ -423,8 +426,103 @@ const handleReset = () => {
   message.success('筛选条件已重置')
 }
 
-const handleSearch = () => {
-  message.success(`查询完成，共 ${filteredMessages.value.length} 条消息`)
+const isSearching = ref(false)
+
+// 转换后端消息到前端格式
+const mapMessage = (msg: BackendMessageItem | null, index: number): MessageItem | null => {
+  if (!msg) return null
+  return {
+    id: msg.id || index + 1,
+    cluster: msg.cluster || '默认集群',
+    topic: msg.topic,
+    messageId: msg.messageId,
+    tags: msg.tags || '',
+    keys: msg.keys || '',
+    producerGroup: msg.producerGroup || '',
+    queueId: msg.queueId || 0,
+    queueOffset: msg.queueOffset || 0,
+    storeHost: msg.storeHost || '',
+    bornHost: msg.bornHost || '',
+    storeTime: msg.storeTime || '',
+    storeTimestamp: msg.storeTimestamp || Date.now(),
+    status: (msg.status || 'normal') as MessageStatus,
+    retryTimes: msg.retryTimes || 0,
+    body: msg.body || '',
+    properties: Object.fromEntries(
+      Object.entries(msg.properties || {}).filter(([, v]) => v !== undefined)
+    ) as Record<string, string>
+  }
+}
+
+const handleSearch = async () => {
+  const topic = selectedTopic.value || ''
+  const idKeyword = messageId.value.trim()
+  const keyKeyword = messageKey.value.trim()
+
+  if (!idKeyword && !keyKeyword) {
+    // 未输入 Message ID / Key 时，只做本地筛选，避免误清空列表
+    message.success(`筛选完成，共 ${filteredMessages.value.length} 条消息`)
+    return
+  }
+
+  isSearching.value = true
+  try {
+    if (idKeyword) {
+      // 优先按 Message ID 查询（需指定 Topic）
+      if (!topic) {
+        const idKw = idKeyword.toLowerCase()
+        const localMatches = messageList.value.filter(item => item.messageId.toLowerCase().includes(idKw))
+        if (localMatches.length > 0) {
+          messageList.value = localMatches
+          message.success(`本地筛选完成，共 ${localMatches.length} 条消息`)
+        } else {
+          message.info('未找到匹配的消息，请先选择 Topic 后再精确查询')
+        }
+        return
+      }
+
+      const result = await MessageService.QueryMessageByID(topic, idKeyword)
+      const mapped = mapMessage(result, 0)
+      if (mapped) {
+        messageList.value = [mapped]
+        message.success('查询完成，找到 1 条消息')
+      } else {
+        message.info('未找到匹配的消息')
+      }
+      return
+    }
+
+    if (topic) {
+      const results = await MessageService.QueryMessages(topic, keyKeyword, 50)
+      const mappedResults = results
+        .map((msg, idx) => mapMessage(msg, idx))
+        .filter((m): m is MessageItem => m !== null)
+
+      if (mappedResults.length > 0) {
+        messageList.value = mappedResults
+        message.success(`查询完成，共 ${mappedResults.length} 条消息`)
+      } else {
+        message.info('查询完成，但没有匹配结果')
+      }
+      return
+    }
+
+    // 无 Topic 时，按 Key 进行本地筛选
+    const keyKw = keyKeyword.toLowerCase()
+    const localMatches = messageList.value.filter(item => item.keys.toLowerCase().includes(keyKw))
+    if (localMatches.length > 0) {
+      messageList.value = localMatches
+      message.success(`本地筛选完成，共 ${localMatches.length} 条消息`)
+    } else {
+      message.info('未找到匹配的消息，请补充 Topic 进行后端查询')
+    }
+  } catch (err) {
+    console.error('查询消息失败:', err)
+    const errorMessage = err instanceof Error ? err.message : '查询消息失败'
+    message.error(errorMessage)
+  } finally {
+    isSearching.value = false
+  }
 }
 
 const handleRefreshAll = () => {
@@ -660,7 +758,11 @@ onUnmounted(() => {
 
     <n-card :bordered="false" class="panel-card table-card" title="消息列表">
       <n-data-table :columns="columns" :data="filteredMessages" :row-key="(row: MessageItem) => row.id" size="small"
-        striped flex-height max-height="520" :single-line="true" :scroll-x="tableScrollX" />
+        striped flex-height max-height="520" :single-line="true" :scroll-x="tableScrollX">
+        <template #empty>
+          <n-empty size="small" description="暂无消息，请调整筛选条件或输入 Topic+Key 查询" />
+        </template>
+      </n-data-table>
     </n-card>
 
     <n-drawer v-model:show="showDetailDrawer" :width="560" placement="right" resizable>

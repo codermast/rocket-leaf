@@ -1,6 +1,7 @@
 <script setup lang="ts">
-import { computed, h, ref } from 'vue'
+import { computed, h, onMounted, ref } from 'vue'
 import {
+  NAlert,
   NButton,
   NCard,
   NDataTable,
@@ -12,14 +13,19 @@ import {
   NInputNumber,
   NModal,
   NPopconfirm,
+  NSwitch,
   NSelect,
   NSpace,
   NTag,
   useMessage
 } from 'naive-ui'
 import type { DataTableColumns, FormInst, FormRules } from 'naive-ui'
+import * as ConnectionService from '../../bindings/rocket-leaf/internal/service/connectionservice'
+import type { Connection } from '../../bindings/rocket-leaf/internal/model/models'
+import { addConnectionCompat, updateConnectionCompat } from '../utils/connectionServiceCompat'
+import { emitConnectionsChanged } from '../utils/connectionEvents'
 
-type ConnectionStatus = 'online' | 'offline'
+type ConnectionStatus = 'online' | 'offline' | 'unknown'
 type ConnectionEnv = '生产' | '测试' | '开发'
 type SummaryTone = 'neutral' | 'success' | 'warning'
 
@@ -29,6 +35,9 @@ interface ConnectionItem {
   env: ConnectionEnv
   nameServer: string
   timeoutSec: number
+  enableACL: boolean
+  accessKey: string
+  secretKey: string
   status: ConnectionStatus
   lastCheck: string
   isDefault: boolean
@@ -40,6 +49,9 @@ interface ConnectionFormModel {
   env: ConnectionEnv
   nameServer: string
   timeoutSec: number
+  enableACL: boolean
+  accessKey: string
+  secretKey: string
   remark: string
 }
 
@@ -57,42 +69,9 @@ const envOptions = [
   { label: '开发', value: '开发' }
 ]
 
-const connectionList = ref<ConnectionItem[]>([
-  {
-    id: 1,
-    name: '生产集群',
-    env: '生产',
-    nameServer: '192.168.1.100:9876',
-    timeoutSec: 5,
-    status: 'online',
-    lastCheck: '2026-02-09 14:10:22',
-    isDefault: true,
-    remark: '核心业务集群'
-  },
-  {
-    id: 2,
-    name: '测试集群',
-    env: '测试',
-    nameServer: '192.168.1.101:9876',
-    timeoutSec: 6,
-    status: 'online',
-    lastCheck: '2026-02-09 14:09:48',
-    isDefault: false,
-    remark: '联调测试环境'
-  },
-  {
-    id: 3,
-    name: '开发集群',
-    env: '开发',
-    nameServer: 'localhost:9876',
-    timeoutSec: 8,
-    status: 'offline',
-    lastCheck: '2026-02-09 13:56:10',
-    isDefault: false,
-    remark: '本地调试'
-  }
-])
-
+// 连接列表
+const connectionList = ref<ConnectionItem[]>([])
+const isLoading = ref(false)
 const searchKeyword = ref('')
 const showEditor = ref(false)
 const isSubmitting = ref(false)
@@ -101,11 +80,54 @@ const testingIds = ref<number[]>([])
 const formRef = ref<FormInst | null>(null)
 const message = useMessage()
 
+// 将后端 Connection 转换为前端 ConnectionItem
+const mapConnection = (conn: Connection | null): ConnectionItem | null => {
+  if (!conn) return null
+  return {
+    id: conn.id,
+    name: conn.name,
+    env: (conn.env as ConnectionEnv) || '开发',
+    nameServer: conn.nameServer,
+    timeoutSec: conn.timeoutSec || 5,
+    enableACL: conn.enableACL || false,
+    accessKey: conn.accessKey || '',
+    secretKey: conn.secretKey || '',
+    status: conn.status as ConnectionStatus || 'unknown',
+    lastCheck: conn.lastCheck || '-',
+    isDefault: conn.isDefault || false,
+    remark: conn.remark || ''
+  }
+}
+
+// 加载连接列表
+const loadConnections = async () => {
+  isLoading.value = true
+  try {
+    const connections = await ConnectionService.GetConnections()
+    connectionList.value = connections
+      .map(mapConnection)
+      .filter((c): c is ConnectionItem => c !== null)
+  } catch (err) {
+    console.error('加载连接列表失败:', err)
+    message.error('加载连接列表失败')
+  } finally {
+    isLoading.value = false
+  }
+}
+
+// 组件挂载时加载数据
+onMounted(() => {
+  loadConnections()
+})
+
 const createDefaultFormModel = (): ConnectionFormModel => ({
   name: '',
   env: '开发',
   nameServer: '',
   timeoutSec: 5,
+  enableACL: false,
+  accessKey: '',
+  secretKey: '',
   remark: ''
 })
 
@@ -115,7 +137,25 @@ const formRules: FormRules = {
   name: [{ required: true, message: '请输入连接名称', trigger: ['blur', 'input'] }],
   env: [{ required: true, message: '请选择环境', trigger: ['change'] }],
   nameServer: [{ required: true, message: '请输入 NameServer 地址', trigger: ['blur', 'input'] }],
-  timeoutSec: [{ required: true, type: 'number', message: '请设置超时时间', trigger: ['blur', 'change'] }]
+  timeoutSec: [{ required: true, type: 'number', message: '请设置超时时间', trigger: ['blur', 'change'] }],
+  accessKey: [{
+    validator: (_rule, value: string) => {
+      if (formModel.value.enableACL && !value.trim()) {
+        return new Error('启用 ACL 时 AccessKey 不能为空')
+      }
+      return true
+    },
+    trigger: ['blur', 'input']
+  }],
+  secretKey: [{
+    validator: (_rule, value: string) => {
+      if (formModel.value.enableACL && !value.trim()) {
+        return new Error('启用 ACL 时 SecretKey 不能为空')
+      }
+      return true
+    },
+    trigger: ['blur', 'input']
+  }]
 }
 
 const filteredConnections = computed(() => {
@@ -156,88 +196,105 @@ const openEdit = (row: ConnectionItem) => {
     env: row.env,
     nameServer: row.nameServer,
     timeoutSec: row.timeoutSec,
+    enableACL: row.enableACL,
+    accessKey: row.accessKey,
+    secretKey: row.secretKey,
     remark: row.remark
   }
   showEditor.value = true
 }
 
-const setAsDefault = (id: number) => {
-  connectionList.value = connectionList.value.map(item => ({
-    ...item,
-    isDefault: item.id === id
-  }))
-}
-
-const deleteConnection = (id: number) => {
-  const removed = connectionList.value.find(item => item.id === id)
-  connectionList.value = connectionList.value.filter(item => item.id !== id)
-  if (!connectionList.value.some(item => item.isDefault) && connectionList.value.length > 0) {
-    const firstConnection = connectionList.value[0]
-    if (firstConnection) {
-      firstConnection.isDefault = true
-    }
+const handleACLToggle = (enabled: boolean) => {
+  formModel.value.enableACL = enabled
+  if (!enabled) {
+    formModel.value.accessKey = ''
+    formModel.value.secretKey = ''
   }
-  message.success(`已删除连接：${removed?.name ?? id}`)
 }
 
-const formatNow = () => {
-  const now = new Date()
-  const pad = (value: number) => value.toString().padStart(2, '0')
-  return `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())} ${pad(now.getHours())}:${pad(now.getMinutes())}:${pad(now.getSeconds())}`
+// 设置默认连接
+const setAsDefault = async (id: number) => {
+  try {
+    await ConnectionService.SetDefaultConnection(id)
+    await loadConnections()
+    emitConnectionsChanged()
+    message.success('已设置为默认连接')
+  } catch (err) {
+    console.error('设置默认连接失败:', err)
+    message.error('设置默认连接失败')
+  }
 }
 
-const testConnection = (id: number) => {
+// 删除连接
+const deleteConnection = async (id: number) => {
+  try {
+    await ConnectionService.DeleteConnection(id)
+    await loadConnections()
+    emitConnectionsChanged()
+    message.success('连接已删除')
+  } catch (err) {
+    console.error('删除连接失败:', err)
+    message.error('删除连接失败')
+  }
+}
+
+// 测试连接
+const testConnection = async (id: number) => {
   if (testingIds.value.includes(id)) return
   testingIds.value.push(id)
 
-  window.setTimeout(() => {
-    const success = Math.random() > 0.25
-    connectionList.value = connectionList.value.map(item => {
-      if (item.id !== id) return item
-      return {
-        ...item,
-        status: success ? 'online' : 'offline',
-        lastCheck: formatNow()
-      }
-    })
+  try {
+    const result = await ConnectionService.TestConnection(id)
+    await loadConnections()
+    emitConnectionsChanged()
+    if (result === 'online') {
+      message.success('连接测试成功')
+    } else {
+      message.warning('连接测试失败')
+    }
+  } catch (err) {
+    console.error('测试连接失败:', err)
+    message.error('测试连接失败')
+  } finally {
     testingIds.value = testingIds.value.filter(itemId => itemId !== id)
-  }, 700)
+  }
 }
 
+// 保存连接
 const saveConnection = async () => {
   if (!formRef.value) return
   await formRef.value.validate()
   isSubmitting.value = true
 
-  const payload = formModel.value
-  if (editingId.value === null) {
-    connectionList.value.unshift({
-      id: Date.now(),
-      name: payload.name,
-      env: payload.env,
-      nameServer: payload.nameServer,
-      timeoutSec: payload.timeoutSec,
-      remark: payload.remark,
-      status: 'offline',
-      lastCheck: '-',
-      isDefault: connectionList.value.length === 0
-    })
-  } else {
-    connectionList.value = connectionList.value.map(item => {
-      if (item.id !== editingId.value) return item
-      return {
-        ...item,
-        name: payload.name,
-        env: payload.env,
-        nameServer: payload.nameServer,
-        timeoutSec: payload.timeoutSec,
-        remark: payload.remark
-      }
-    })
+  try {
+    const payload = formModel.value
+    if (editingId.value === null) {
+      // 新建连接
+      await addConnectionCompat({
+        ...payload,
+        accessKey: payload.accessKey.trim(),
+        secretKey: payload.secretKey.trim()
+      })
+      message.success('连接创建成功')
+    } else {
+      // 更新连接
+      await updateConnectionCompat(editingId.value, {
+        ...payload,
+        accessKey: payload.accessKey.trim(),
+        secretKey: payload.secretKey.trim()
+      })
+      message.success('连接更新成功')
+    }
+    await loadConnections()
+    emitConnectionsChanged()
+    showEditor.value = false
+  } catch (err) {
+    console.error('保存连接失败:', err)
+    const errorMessage = err instanceof Error ? err.message : '保存连接失败'
+    message.error(errorMessage)
+  } finally {
+    isSubmitting.value = false
   }
-
-  isSubmitting.value = false
-  showEditor.value = false
 }
 
 const tableScrollX = 1160
@@ -248,8 +305,8 @@ const columns: DataTableColumns<ConnectionItem> = [
     key: 'name',
     minWidth: 180,
     render: (row) => h('div', { class: 'name-cell' }, [
-      h('span', null, row.name),
-      row.isDefault ? h(NTag, { type: 'success', size: 'small', round: true }, { default: () => '默认' }) : null
+      row.name,
+      row.isDefault ? h(NTag, { size: 'small', type: 'info', style: 'margin-left: 8px' }, { default: () => '默认' }) : null
     ])
   },
   { title: '环境', key: 'env', width: 90 },
@@ -258,11 +315,10 @@ const columns: DataTableColumns<ConnectionItem> = [
     title: '状态',
     key: 'status',
     width: 90,
-    render: (row) => h(
-      NTag,
-      { type: row.status === 'online' ? 'success' : 'error', size: 'small', round: true },
-      { default: () => (row.status === 'online' ? '在线' : '离线') }
-    )
+    render: (row) => h(NTag, {
+      type: row.status === 'online' ? 'success' : row.status === 'offline' ? 'error' : 'warning',
+      size: 'small'
+    }, { default: () => row.status === 'online' ? '在线' : row.status === 'offline' ? '离线' : '未知' })
   },
   { title: '超时(秒)', key: 'timeoutSec', width: 100 },
   { title: '最近检测', key: 'lastCheck', width: 168 },
@@ -270,35 +326,15 @@ const columns: DataTableColumns<ConnectionItem> = [
     title: '操作',
     key: 'actions',
     width: 280,
-    render: (row) => h(NSpace, { size: 6 }, {
+    render: (row) => h(NSpace, { size: 'small' }, {
       default: () => [
-        h(
-          NButton,
-          { size: 'tiny', quaternary: true, onClick: () => testConnection(row.id), loading: testingIds.value.includes(row.id) },
-          { default: () => '测试连接' }
-        ),
-        h(
-          NButton,
-          { size: 'tiny', quaternary: true, onClick: () => openEdit(row) },
-          { default: () => '编辑' }
-        ),
-        h(
-          NButton,
-          { size: 'tiny', quaternary: true, disabled: row.isDefault, onClick: () => setAsDefault(row.id) },
-          { default: () => '设为默认' }
-        ),
-        h(
-          NPopconfirm,
-          { onPositiveClick: () => deleteConnection(row.id) },
-          {
-            trigger: () => h(
-              NButton,
-              { size: 'tiny', quaternary: true, type: 'error', disabled: row.isDefault },
-              { default: () => '删除' }
-            ),
-            default: () => '确认删除该连接吗？'
-          }
-        )
+        h(NButton, { text: true, type: 'primary', onClick: () => testConnection(row.id), loading: testingIds.value.includes(row.id) }, { default: () => '测试' }),
+        h(NButton, { text: true, type: 'info', onClick: () => openEdit(row) }, { default: () => '编辑' }),
+        h(NButton, { text: true, type: 'warning', onClick: () => setAsDefault(row.id), disabled: row.isDefault }, { default: () => '设为默认' }),
+        h(NPopconfirm, { onPositiveClick: () => deleteConnection(row.id) }, {
+          trigger: () => h(NButton, { text: true, type: 'error' }, { default: () => '删除' }),
+          default: () => '确认删除此连接？'
+        })
       ]
     })
   }
@@ -306,135 +342,154 @@ const columns: DataTableColumns<ConnectionItem> = [
 </script>
 
 <template>
-  <div class="connection-page">
-    <n-grid responsive="screen" cols="1 s:3 l:3" :x-gap="12" :y-gap="12" class="summary-grid">
-      <n-gi v-for="item in summaryItems" :key="item.key">
-        <n-card hoverable size="small" class="summary-card">
-          <div class="summary-content">
-            <div class="summary-label">{{ item.label }}</div>
-            <div class="summary-value" :class="`is-${item.tone}`">{{ item.value }}</div>
-            <div class="summary-foot">
-              <n-tag size="small" round
-                :type="item.tone === 'warning' ? 'warning' : item.tone === 'success' ? 'success' : 'default'">
-                {{ item.hint }}
-              </n-tag>
-            </div>
-          </div>
-        </n-card>
-      </n-gi>
-    </n-grid>
+  <div class="connection-management">
+    <!-- 概览卡片 -->
+    <NGrid :cols="3" :x-gap="16" :y-gap="16" class="summary-grid">
+      <NGi v-for="item in summaryItems" :key="item.key">
+        <NCard size="small" hoverable :class="['summary-card', `tone-${item.tone}`]">
+          <div class="summary-value">{{ item.value }}</div>
+          <div class="summary-label">{{ item.label }}</div>
+          <div class="summary-hint">{{ item.hint }}</div>
+        </NCard>
+      </NGi>
+    </NGrid>
 
-    <n-card :bordered="false" class="table-card">
-      <div class="toolbar">
-        <n-space wrap>
-          <n-button type="primary" @click="openCreate">新增连接</n-button>
-          <n-input v-model:value="searchKeyword" clearable placeholder="搜索名称 / 环境 / NameServer" style="width: 280px;" />
-        </n-space>
-      </div>
+    <!-- 搜索与操作栏 -->
+    <div class="toolbar">
+      <NInput v-model:value="searchKeyword" placeholder="搜索连接名称 / NameServer / 环境" clearable style="width: 320px" />
+      <NSpace>
+        <NButton @click="loadConnections" :loading="isLoading">刷新</NButton>
+        <NButton type="primary" @click="openCreate">新建连接</NButton>
+      </NSpace>
+    </div>
 
-      <n-data-table :columns="columns" :data="filteredConnections" :pagination="{ pageSize: 8 }" :single-line="true"
-        :scroll-x="tableScrollX" size="small" />
-    </n-card>
+    <!-- 数据表格 -->
+    <NDataTable :columns="columns" :data="filteredConnections" :scroll-x="tableScrollX" :loading="isLoading"
+      :bordered="false" striped class="connection-table" />
 
-    <n-modal v-model:show="showEditor" preset="card" class="editor-modal"
-      :style="{ width: '560px', maxWidth: 'calc(100vw - 32px)' }" :title="editingId ? '编辑连接' : '新增连接'">
-      <n-form ref="formRef" :model="formModel" :rules="formRules" label-placement="left" label-width="90">
-        <n-form-item label="连接名称" path="name">
-          <n-input v-model:value="formModel.name" placeholder="例如：生产集群" />
-        </n-form-item>
+    <!-- 编辑弹窗 -->
+    <NModal v-model:show="showEditor" preset="card" :title="editingId === null ? '新建连接' : '编辑连接'" style="width: 620px"
+      :mask-closable="false">
+      <NForm ref="formRef" class="connection-editor-form" :model="formModel" :rules="formRules" label-placement="left"
+        label-width="140px">
+        <NFormItem label="连接名称" path="name">
+          <NInput v-model:value="formModel.name" placeholder="如：生产集群" />
+        </NFormItem>
+        <NFormItem label="环境" path="env">
+          <NSelect v-model:value="formModel.env" :options="envOptions" placeholder="请选择环境" />
+        </NFormItem>
+        <NFormItem label="NameServer" path="nameServer">
+          <NInput v-model:value="formModel.nameServer" placeholder="如：192.168.1.100:9876" />
+        </NFormItem>
+        <NFormItem label="超时时间" path="timeoutSec">
+          <NInputNumber v-model:value="formModel.timeoutSec" :min="1" :max="60" placeholder="秒" style="width: 100%" />
+        </NFormItem>
 
-        <n-form-item label="环境" path="env">
-          <n-select v-model:value="formModel.env" :options="envOptions" />
-        </n-form-item>
+        <NFormItem label="启用 ACL">
+          <NSwitch :value="formModel.enableACL" @update:value="handleACLToggle">
+            <template #checked>已启用</template>
+            <template #unchecked>未启用</template>
+          </NSwitch>
+        </NFormItem>
 
-        <n-form-item label="NameServer" path="nameServer">
-          <n-input v-model:value="formModel.nameServer" placeholder="例如：127.0.0.1:9876" />
-        </n-form-item>
+        <NAlert v-if="formModel.enableACL" type="info" :show-icon="false" style="margin-bottom: 12px;">
+          已启用 ACL 鉴权，请填写 AccessKey 与 SecretKey。
+        </NAlert>
 
-        <n-form-item label="超时(秒)" path="timeoutSec">
-          <n-input-number v-model:value="formModel.timeoutSec" :min="1" :max="60" style="width: 160px;" />
-        </n-form-item>
+        <NFormItem v-if="formModel.enableACL" label="AccessKey" path="accessKey">
+          <NInput v-model:value="formModel.accessKey" placeholder="请输入 ACL AccessKey" />
+        </NFormItem>
 
-        <n-form-item label="备注">
-          <n-input v-model:value="formModel.remark" type="textarea" :rows="3" placeholder="可选备注信息" />
-        </n-form-item>
-      </n-form>
+        <NFormItem v-if="formModel.enableACL" label="SecretKey" path="secretKey">
+          <NInput v-model:value="formModel.secretKey" type="password" show-password-on="click" placeholder="请输入 ACL SecretKey" />
+        </NFormItem>
+
+        <NFormItem label="备注" path="remark">
+          <NInput v-model:value="formModel.remark" type="textarea" placeholder="连接备注信息" :rows="2" />
+        </NFormItem>
+      </NForm>
 
       <template #footer>
-        <div class="editor-actions">
-          <n-space justify="end">
-            <n-button @click="showEditor = false">取消</n-button>
-            <n-button type="primary" :loading="isSubmitting" @click="saveConnection">保存</n-button>
-          </n-space>
-        </div>
+        <NSpace justify="end">
+          <NButton @click="showEditor = false">取消</NButton>
+          <NButton type="primary" :loading="isSubmitting" @click="saveConnection">确定</NButton>
+        </NSpace>
       </template>
-    </n-modal>
+    </NModal>
   </div>
 </template>
 
 <style scoped>
-.connection-page {
+.connection-management {
   display: flex;
   flex-direction: column;
   gap: 16px;
 }
 
-.summary-card,
-.table-card {
-  background: var(--surface-2, #fff);
-  border-radius: 5px;
-}
-
 .summary-grid {
-  margin-top: 2px;
+  margin-bottom: 8px;
 }
 
-.summary-content {
-  min-height: 102px;
-  display: flex;
-  flex-direction: column;
-  justify-content: space-between;
-}
-
-.summary-label {
-  font-size: 13px;
-  color: var(--text-muted, #888);
+.summary-card {
+  text-align: center;
 }
 
 .summary-value {
-  margin-top: 4px;
-  font-size: 34px;
+  font-size: 28px;
   font-weight: 700;
-  line-height: 1;
-  color: var(--text-color, #333);
+  line-height: 1.2;
 }
 
-.summary-value.is-success {
+.summary-label {
+  font-size: 14px;
+  color: #666;
+  margin-top: 4px;
+}
+
+.summary-hint {
+  font-size: 12px;
+  color: #999;
+  margin-top: 2px;
+}
+
+.tone-neutral .summary-value {
+  color: #333;
+}
+
+.tone-success .summary-value {
   color: #18a058;
 }
 
-.summary-value.is-warning {
-  color: #d97706;
-}
-
-.summary-foot {
-  margin-top: 10px;
+.tone-warning .summary-value {
+  color: #f0a020;
 }
 
 .toolbar {
-  margin-bottom: 12px;
   display: flex;
   justify-content: space-between;
   align-items: center;
+}
+
+.connection-table {
+  flex: 1;
 }
 
 .name-cell {
   display: flex;
   align-items: center;
-  gap: 8px;
 }
 
-.editor-actions {
-  width: 100%;
+.connection-editor-form :deep(.n-form-item-label) {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  white-space: nowrap;
+  word-break: keep-all;
+}
+
+.connection-editor-form :deep(.n-form-item-label__text) {
+  white-space: nowrap;
+  word-break: normal;
+  overflow-wrap: normal;
 }
 </style>

@@ -2,9 +2,11 @@ package main
 
 import (
 	"embed"
-	_ "embed"
 	"log"
+	"rocket-leaf/internal/rocketmq"
 	"time"
+
+	"rocket-leaf/internal/service"
 
 	"github.com/wailsapp/wails/v3/pkg/application"
 )
@@ -17,11 +19,30 @@ import (
 //go:embed all:frontend/dist
 var assets embed.FS
 
+// 后端服务实例
+var (
+	connectionService *service.ConnectionService
+	clusterService    *service.ClusterService
+	topicService      *service.TopicService
+	consumerService   *service.ConsumerService
+	messageService    *service.MessageService
+)
+
 func init() {
 	// Register a custom event whose associated data type is string.
 	// This is not required, but the binding generator will pick up registered events
 	// and provide a strongly typed JS/TS API for them.
 	application.RegisterEvent[string]("time")
+
+	// 初始化后端服务
+	connectionService = service.NewConnectionService()
+	clusterService = service.NewClusterService(connectionService)
+	topicService = service.NewTopicService()
+	consumerService = service.NewConsumerService()
+	messageService = service.NewMessageService()
+
+	// 配置默认连接的懒初始化，业务接口首次访问时自动尝试连接默认连接
+	rocketmq.GetClientManager().SetDefaultClientInitializer(connectionService.ConnectDefault)
 }
 
 // main function serves as the application's entry point. It initializes the application, creates a window,
@@ -36,9 +57,13 @@ func main() {
 	// 'Mac' options tailor the application when running an macOS.
 	app := application.New(application.Options{
 		Name:        "rocket-leaf",
-		Description: "A demo of using raw HTML & CSS",
+		Description: "RocketMQ 跨平台轻量级管理客户端",
 		Services: []application.Service{
-			application.NewService(&GreetService{}),
+			application.NewService(connectionService), // 连接管理服务
+			application.NewService(clusterService),    // 集群状态服务
+			application.NewService(topicService),      // Topic 管理服务
+			application.NewService(consumerService),   // 消费者组服务
+			application.NewService(messageService),    // 消息查询服务
 		},
 		Assets: application.AssetOptions{
 			Handler: application.AssetFileServerFS(assets),

@@ -7,6 +7,7 @@ import {
   NDescriptions,
   NDescriptionsItem,
   NDrawer,
+  NEmpty,
   NDrawerContent,
   NGrid,
   NGi,
@@ -18,6 +19,8 @@ import {
   useMessage
 } from 'naive-ui'
 import type { DataTableColumns } from 'naive-ui'
+import * as ClusterService from '../../bindings/rocket-leaf/internal/service/clusterservice'
+import type { BrokerNode as BackendBrokerNode, NameServerNode as BackendNameServerNode } from '../../bindings/rocket-leaf/internal/model/models'
 
 type NodeStatus = 'online' | 'warning' | 'offline'
 type BrokerRole = 'MASTER' | 'SLAVE'
@@ -111,127 +114,78 @@ const buildSparklinePoints = (series: number[]) => {
     .join(' ')
 }
 
-const nameServerList = ref<NameServerNode[]>([
-  {
-    id: 1,
-    cluster: '生产集群',
-    address: '10.0.1.10:9876',
-    version: '5.1.4',
-    status: 'online',
-    lastSeen: '2026-02-09 16:52:21'
-  },
-  {
-    id: 2,
-    cluster: '生产集群',
-    address: '10.0.1.11:9876',
-    version: '5.1.4',
-    status: 'online',
-    lastSeen: '2026-02-09 16:52:18'
-  },
-  {
-    id: 3,
-    cluster: '测试集群',
-    address: '10.2.0.10:9876',
-    version: '5.1.3',
-    status: 'warning',
-    lastSeen: '2026-02-09 16:51:39'
-  },
-  {
-    id: 4,
-    cluster: '开发集群',
-    address: '127.0.0.1:9876',
-    version: '5.1.2',
-    status: 'online',
-    lastSeen: '2026-02-09 16:50:10'
-  }
-])
+const nameServerList = ref<NameServerNode[]>([])
+const isLoadingNameServers = ref(false)
 
-const brokerList = ref<BrokerNode[]>([
-  createBroker({
-    id: 1,
-    cluster: '生产集群',
-    brokerName: 'broker-prod-a',
-    brokerId: 0,
-    role: 'MASTER',
-    address: '10.0.1.21:10911',
-    haAddress: '10.0.1.21:10912',
-    version: '5.1.4',
-    status: 'online',
-    topics: 63,
-    groups: 28,
-    tpsIn: 1680,
-    tpsOut: 1542,
-    msgInToday: 10820431,
-    msgOutToday: 10322764,
-    commitLogDiskUsage: 62,
-    consumeQueueDiskUsage: 48,
-    lastUpdate: '2026-02-09 16:52:16',
-    remark: '生产主节点，业务高峰时段负载较高'
-  }),
-  createBroker({
-    id: 2,
-    cluster: '生产集群',
-    brokerName: 'broker-prod-b',
-    brokerId: 1,
-    role: 'SLAVE',
-    address: '10.0.1.22:10911',
-    haAddress: '10.0.1.22:10912',
-    version: '5.1.4',
-    status: 'online',
-    topics: 63,
-    groups: 28,
-    tpsIn: 1360,
-    tpsOut: 1291,
-    msgInToday: 9623411,
-    msgOutToday: 9432754,
-    commitLogDiskUsage: 59,
-    consumeQueueDiskUsage: 45,
-    lastUpdate: '2026-02-09 16:52:09',
-    remark: '生产从节点，数据复制稳定'
-  }),
-  createBroker({
-    id: 3,
-    cluster: '测试集群',
-    brokerName: 'broker-test-a',
-    brokerId: 0,
-    role: 'MASTER',
-    address: '10.2.0.21:10911',
-    haAddress: '10.2.0.21:10912',
-    version: '5.1.3',
-    status: 'warning',
-    topics: 21,
-    groups: 14,
-    tpsIn: 342,
-    tpsOut: 319,
-    msgInToday: 1204311,
-    msgOutToday: 1132764,
-    commitLogDiskUsage: 84,
-    consumeQueueDiskUsage: 66,
-    lastUpdate: '2026-02-09 16:51:43',
-    remark: '磁盘水位偏高，建议近期扩容'
-  }),
-  createBroker({
-    id: 4,
-    cluster: '开发集群',
-    brokerName: 'broker-dev-a',
-    brokerId: 0,
-    role: 'MASTER',
-    address: '127.0.0.1:10911',
-    haAddress: '127.0.0.1:10912',
-    version: '5.1.2',
-    status: 'offline',
-    topics: 8,
-    groups: 5,
-    tpsIn: 0,
-    tpsOut: 0,
-    msgInToday: 0,
-    msgOutToday: 0,
-    commitLogDiskUsage: 0,
-    consumeQueueDiskUsage: 0,
-    lastUpdate: '2026-02-09 15:38:21',
-    remark: '本地环境暂未启动'
-  })
-])
+// 加载 NameServer 列表
+const loadNameServers = async () => {
+  isLoadingNameServers.value = true
+  try {
+    const servers = await ClusterService.GetNameServers()
+    nameServerList.value = servers
+      .filter((s): s is BackendNameServerNode => s !== null)
+      .map((s, index) => ({
+        id: index + 1,
+        cluster: s.cluster || '默认集群',
+        address: s.address,
+        version: s.version || '-',
+        status: (s.status || 'online') as NodeStatus,
+        lastSeen: s.lastSeen || '-'
+      }))
+  } catch (err) {
+    console.error('加载 NameServer 列表失败:', err)
+    const errorMessage = err instanceof Error ? err.message : '加载 NameServer 列表失败'
+    message.error(errorMessage)
+  } finally {
+    isLoadingNameServers.value = false
+  }
+}
+
+const brokerList = ref<BrokerNode[]>([])
+const isLoadingBrokers = ref(false)
+
+// 加载 Broker 列表
+const loadBrokers = async () => {
+  isLoadingBrokers.value = true
+  try {
+    const brokers = await ClusterService.GetBrokers()
+    brokerList.value = brokers
+      .filter((b): b is BackendBrokerNode => b !== null)
+      .map(b => createBroker({
+        id: b.id,
+        cluster: b.cluster || '默认集群',
+        brokerName: b.brokerName,
+        brokerId: b.brokerId,
+        role: (b.role || 'MASTER') as BrokerRole,
+        address: b.address,
+        haAddress: b.haAddress || '',
+        version: b.version || '-',
+        status: (b.status || 'offline') as NodeStatus,
+        topics: b.topics || 0,
+        groups: b.groups || 0,
+        tpsIn: b.tpsIn || 0,
+        tpsOut: b.tpsOut || 0,
+        msgInToday: b.msgInToday || 0,
+        msgOutToday: b.msgOutToday || 0,
+        commitLogDiskUsage: b.commitLogDiskUsage || 0,
+        consumeQueueDiskUsage: b.consumeQueueDiskUsage || 0,
+        lastUpdate: b.lastUpdate || '-',
+        remark: b.remark || ''
+      }))
+  } catch (err) {
+    console.error('加载 Broker 列表失败:', err)
+    const errorMessage = err instanceof Error ? err.message : '加载 Broker 列表失败'
+    message.error(errorMessage)
+  } finally {
+    isLoadingBrokers.value = false
+  }
+}
+
+// 刷新数据
+const refreshData = async () => {
+  await Promise.all([loadNameServers(), loadBrokers()])
+  lastRefreshAt.value = formatDateTime(new Date())
+}
 
 const selectedCluster = ref<string | null>(null)
 const selectedStatus = ref<NodeStatus | null>(null)
@@ -461,6 +415,10 @@ const refreshSingleBroker = (id: number) => {
 const startAutoRefresh = () => {
   if (refreshTimer) return
   refreshTimer = setInterval(() => {
+    if (brokerList.value.length === 0) {
+      void refreshData()
+      return
+    }
     runRefresh('auto')
   }, AUTO_REFRESH_MS)
 }
@@ -500,14 +458,15 @@ const handleViewDetail = (row: BrokerNode) => {
   showDetailDrawer.value = true
 }
 
-const handleRefreshRuntime = (row?: BrokerNode) => {
+const handleRefreshRuntime = async (row?: BrokerNode) => {
   if (row) {
     refreshSingleBroker(row.id)
     message.success(`已刷新 ${row.brokerName} 运行状态`)
     return
   }
 
-  runRefresh('manual')
+  await refreshData()
+  message.success(`已刷新集群数据，当前 ${brokerList.value.length} 个 Broker`)
 }
 
 const handleToggleAutoRefresh = () => {
@@ -638,6 +597,8 @@ watch(autoRefreshEnabled, (enabled) => {
 })
 
 onMounted(() => {
+  // 加载数据
+  refreshData()
   if (autoRefreshEnabled.value) {
     startAutoRefresh()
   }
@@ -712,13 +673,18 @@ onUnmounted(() => {
       <n-gi :span="2">
         <n-card :bordered="false" class="panel-card table-card" title="Broker 列表">
           <n-data-table :columns="columns" :data="filteredBrokers" :row-key="(row: BrokerNode) => row.id" size="small"
-            striped max-height="560" flex-height :single-line="true" :scroll-x="tableScrollX" />
+            striped max-height="560" flex-height :single-line="true" :scroll-x="tableScrollX">
+            <template #empty>
+              <n-empty size="small" description="暂无 Broker 数据，请确认默认连接在线后点击“刷新全部状态”" />
+            </template>
+          </n-data-table>
         </n-card>
       </n-gi>
 
       <n-gi :span="1">
         <n-card :bordered="false" class="panel-card side-card" title="NameServer 节点">
-          <div v-for="node in nameServerList" :key="node.id" class="namesrv-item">
+          <n-empty v-if="nameServerList.length === 0" size="small" description="暂无 NameServer 数据" />
+          <div v-else v-for="node in nameServerList" :key="node.id" class="namesrv-item">
             <div class="namesrv-row">
               <span class="namesrv-cluster">{{ node.cluster }}</span>
               <n-tag size="small" :type="getStatusTagType(node.status)" round>

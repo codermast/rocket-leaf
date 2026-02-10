@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, h, ref } from 'vue'
+import { computed, h, onMounted, ref } from 'vue'
 import {
   NButton,
   NCard,
@@ -22,6 +22,8 @@ import {
   useMessage
 } from 'naive-ui'
 import type { DataTableColumns, FormInst, FormRules } from 'naive-ui'
+import * as TopicService from '../../bindings/rocket-leaf/internal/service/topicservice'
+import type { TopicItem as BackendTopicItem, TopicRouteItem as BackendRouteItem } from '../../bindings/rocket-leaf/internal/model/models'
 
 type TopicPerm = 'RW' | 'R' | 'W' | 'DENY'
 type TopicMessageType = 'Normal' | 'FIFO' | 'Delay'
@@ -79,61 +81,54 @@ const messageTypeOptions = [
   { label: '延迟消息', value: 'Delay' }
 ]
 
-const topicList = ref<TopicItem[]>([
-  {
-    id: 1,
-    topic: 'order_event',
-    cluster: '生产集群',
-    readQueue: 16,
-    writeQueue: 16,
-    perm: 'RW',
+const topicList = ref<TopicItem[]>([])
+const isLoading = ref(false)
+
+// 转换后端数据到前端格式
+const mapTopic = (t: BackendTopicItem | null): TopicItem | null => {
+  if (!t) return null
+  return {
+    id: t.id,
+    topic: t.topic,
+    cluster: t.cluster || '默认集群',
+    readQueue: t.readQueue || 4,
+    writeQueue: t.writeQueue || 4,
+    perm: (t.perm as TopicPerm) || 'RW',
     messageType: 'Normal',
-    consumerGroups: 4,
-    tpsIn: 528,
-    tpsOut: 503,
-    lastUpdated: '2026-02-09 15:22:11',
-    description: '订单生命周期事件流',
-    routes: [
-      { broker: 'broker-a', brokerAddr: '192.168.1.11:10911', readQueue: 8, writeQueue: 8, perm: 'RW' },
-      { broker: 'broker-b', brokerAddr: '192.168.1.12:10911', readQueue: 8, writeQueue: 8, perm: 'RW' }
-    ]
-  },
-  {
-    id: 2,
-    topic: 'payment_result',
-    cluster: '生产集群',
-    readQueue: 12,
-    writeQueue: 12,
-    perm: 'RW',
-    messageType: 'FIFO',
-    consumerGroups: 3,
-    tpsIn: 214,
-    tpsOut: 208,
-    lastUpdated: '2026-02-09 15:18:46',
-    description: '支付结果通知',
-    routes: [
-      { broker: 'broker-a', brokerAddr: '192.168.1.11:10911', readQueue: 6, writeQueue: 6, perm: 'RW' },
-      { broker: 'broker-c', brokerAddr: '192.168.1.13:10911', readQueue: 6, writeQueue: 6, perm: 'RW' }
-    ]
-  },
-  {
-    id: 3,
-    topic: 'dev_test_topic',
-    cluster: '开发集群',
-    readQueue: 4,
-    writeQueue: 4,
-    perm: 'R',
-    messageType: 'Delay',
-    consumerGroups: 1,
-    tpsIn: 12,
-    tpsOut: 8,
-    lastUpdated: '2026-02-09 14:57:03',
-    description: '开发环境测试 Topic',
-    routes: [
-      { broker: 'broker-dev', brokerAddr: '127.0.0.1:10911', readQueue: 4, writeQueue: 4, perm: 'R' }
-    ]
+    consumerGroups: 0,
+    tpsIn: 0,
+    tpsOut: 0,
+    lastUpdated: t.lastUpdated || '-',
+    description: '',
+    routes: (t.routes || []).map((r: BackendRouteItem) => ({
+      broker: r.broker || '',
+      brokerAddr: r.brokerAddr || '',
+      readQueue: r.readQueue || 0,
+      writeQueue: r.writeQueue || 0,
+      perm: (r.perm as TopicPerm) || 'RW'
+    }))
   }
-])
+}
+
+// 加载 Topic 列表
+const loadTopics = async () => {
+  isLoading.value = true
+  try {
+    const topics = await TopicService.GetTopics()
+    topicList.value = topics
+      .map(mapTopic)
+      .filter((t): t is TopicItem => t !== null)
+  } catch (err) {
+    console.error('加载 Topic 列表失败:', err)
+    message.error('加载 Topic 列表失败')
+  } finally {
+    isLoading.value = false
+  }
+}
+
+onMounted(() => {
+  loadTopics()
+})
 
 const keyword = ref('')
 const selectedCluster = ref<string | null>(null)
@@ -217,14 +212,22 @@ const openDetail = (row: TopicItem) => {
   showDetail.value = true
 }
 
-const removeTopic = (id: number) => {
-  const removed = topicList.value.find(item => item.id === id)
-  topicList.value = topicList.value.filter(item => item.id !== id)
-  if (currentTopic.value?.id === id) {
-    showDetail.value = false
-    currentTopic.value = null
+const removeTopic = async (id: number) => {
+  const topic = topicList.value.find(item => item.id === id)
+  if (!topic) return
+
+  try {
+    await TopicService.DeleteTopic(topic.topic, topic.cluster)
+    await loadTopics()
+    if (currentTopic.value?.id === id) {
+      showDetail.value = false
+      currentTopic.value = null
+    }
+    message.success(`已删除 Topic：${topic.topic}`)
+  } catch (err) {
+    console.error('删除 Topic 失败:', err)
+    message.error('删除 Topic 失败')
   }
-  message.success(`已删除 Topic：${removed?.topic ?? id}`)
 }
 
 const saveTopic = async () => {
@@ -232,50 +235,38 @@ const saveTopic = async () => {
   await formRef.value.validate()
   saving.value = true
 
-  const payload = formModel.value
-  if (editingId.value === null) {
-    topicList.value.unshift({
-      id: Date.now(),
-      topic: payload.topic,
-      cluster: payload.cluster,
-      readQueue: payload.readQueue,
-      writeQueue: payload.writeQueue,
-      perm: payload.perm,
-      messageType: payload.messageType,
-      consumerGroups: 0,
-      tpsIn: 0,
-      tpsOut: 0,
-      lastUpdated: new Date().toLocaleString(),
-      description: payload.description,
-      routes: [
-        {
-          broker: `${payload.cluster}-broker-1`,
-          brokerAddr: '127.0.0.1:10911',
-          readQueue: payload.readQueue,
-          writeQueue: payload.writeQueue,
-          perm: payload.perm
-        }
-      ]
-    })
-  } else {
-    topicList.value = topicList.value.map((item) => {
-      if (item.id !== editingId.value) return item
-      return {
-        ...item,
-        topic: payload.topic,
-        cluster: payload.cluster,
-        readQueue: payload.readQueue,
-        writeQueue: payload.writeQueue,
-        perm: payload.perm,
-        messageType: payload.messageType,
-        description: payload.description,
-        lastUpdated: new Date().toLocaleString()
-      }
-    })
-  }
+  try {
+    const payload = formModel.value
+    // 注意：需要先获取 brokerAddr，这里暂时使用空字符串
+    const brokerAddr = '' // TODO: 从集群信息中获取
 
-  saving.value = false
-  showEditor.value = false
+    if (editingId.value === null) {
+      await TopicService.CreateTopic(
+        payload.topic,
+        brokerAddr,
+        payload.readQueue,
+        payload.writeQueue,
+        payload.perm
+      )
+      message.success('Topic 创建成功')
+    } else {
+      await TopicService.UpdateTopic(
+        payload.topic,
+        brokerAddr,
+        payload.readQueue,
+        payload.writeQueue,
+        payload.perm
+      )
+      message.success('Topic 更新成功')
+    }
+    await loadTopics()
+    showEditor.value = false
+  } catch (err) {
+    console.error('保存 Topic 失败:', err)
+    message.error('保存 Topic 失败')
+  } finally {
+    saving.value = false
+  }
 }
 
 const getPermTagType = (perm: TopicPerm) => {
@@ -401,7 +392,7 @@ const columns: DataTableColumns<TopicItem> = [
             <n-descriptions-item label="Topic">{{ currentTopic.topic }}</n-descriptions-item>
             <n-descriptions-item label="集群">{{ currentTopic.cluster }}</n-descriptions-item>
             <n-descriptions-item label="读写队列">{{ currentTopic.readQueue }}/{{ currentTopic.writeQueue
-            }}</n-descriptions-item>
+              }}</n-descriptions-item>
             <n-descriptions-item label="权限">
               <n-tag size="small" round :type="getPermTagType(currentTopic.perm)">{{ currentTopic.perm }}</n-tag>
             </n-descriptions-item>
@@ -411,7 +402,7 @@ const columns: DataTableColumns<TopicItem> = [
             </n-descriptions-item>
             <n-descriptions-item label="消费者组">{{ currentTopic.consumerGroups }}</n-descriptions-item>
             <n-descriptions-item label="TPS(入/出)">{{ currentTopic.tpsIn }}/{{ currentTopic.tpsOut
-            }}</n-descriptions-item>
+              }}</n-descriptions-item>
             <n-descriptions-item label="最近更新">{{ currentTopic.lastUpdated }}</n-descriptions-item>
             <n-descriptions-item label="描述" :span="2">{{ currentTopic.description || '-' }}</n-descriptions-item>
           </n-descriptions>

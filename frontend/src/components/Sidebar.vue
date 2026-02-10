@@ -1,8 +1,12 @@
 <script setup lang="ts">
-import { ref, h, computed, onMounted, watch } from 'vue'
+import { ref, h, computed, onMounted, onUnmounted, watch } from 'vue'
 import type { Component } from 'vue'
-import { NMenu, NIcon, NLayoutSider, NTooltip, NDropdown, NAvatar, NText, NBadge } from 'naive-ui'
-import type { MenuOption } from 'naive-ui'
+import {
+    NMenu, NIcon, NLayoutSider, NTooltip, NDropdown, NAvatar, NText, NBadge,
+    NCard, NPopover, NTag, NModal, NForm, NFormItem, NInput, NInputNumber,
+    NSelect, NSpace, NButton, NSwitch, NAlert, useMessage
+} from 'naive-ui'
+import type { MenuOption, FormInst, FormRules } from 'naive-ui'
 import {
     SpeedometerOutline,
     LinkOutline,
@@ -18,6 +22,9 @@ import {
 } from '@vicons/ionicons5'
 
 import { Browser } from '@wailsio/runtime'
+import * as ConnectionService from '../../bindings/rocket-leaf/internal/service/connectionservice'
+import { addConnectionCompat } from '../utils/connectionServiceCompat'
+import { emitConnectionsChanged, onConnectionsChanged } from '../utils/connectionEvents'
 
 interface Instance {
     label: string
@@ -32,6 +39,10 @@ interface SidebarMenuItem {
     key: string
     icon: Component
 }
+
+const props = defineProps<{
+    currentPage?: string
+}>()
 
 const emit = defineEmits<{
     (e: 'update:currentPage', key: string): void
@@ -48,15 +59,95 @@ const renderIcon = (icon: Component) => {
     return () => h(NIcon, null, { default: () => h(icon) })
 }
 
+// Apache RocketMQ 官方 SVG 图标组件
 const RocketMQIcon = {
     render() {
-        return h('span', { class: 'rocketmq-icon' })
+        return h('svg', {
+            viewBox: '0 0 24 24',
+            xmlns: 'http://www.w3.org/2000/svg',
+            fill: 'currentColor',
+            width: '1em',
+            height: '1em'
+        }, [
+            h('path', {
+                d: 'M11.438 23.467c-.517-.638-1.106-1.89-1.217-2.587l-.082-.511h1.835c1.435 0 1.835.036 1.835.165 0 .352-.412 1.553-.709 2.066-.333.577-1.021 1.41-1.155 1.4-.043-.004-.272-.244-.507-.533zm-4.532-4.193c-1.251-3.005-1.231-6.784.056-10.63.786-2.35 2.652-5.689 4.413-7.9L11.967 0l.422.493c.763.893 2.612 3.731 3.28 5.036 1.32 2.578 2.055 4.993 2.264 7.438.197 2.302-.176 4.837-.962 6.533l-.338.731-.727-.433-.727-.433H11.95c-2.466 0-3.287.039-3.476.166-.136.091-.453.29-.705.441l-.458.276-.405-.974zm9.338-1.79c.779-2.623.532-6.253-.635-9.344-.683-1.81-2.085-4.319-3.211-5.747-.357-.452-.387-.466-.609-.265-.441.398-1.854 2.622-2.544 4.002-1.927 3.856-2.484 7.995-1.521 11.308l.196.672h8.138l.186-.626zM3.311 19.835c.037-.155.108-.565.157-.909.079-.549.189-.729.885-1.443l.795-.815.002.507c.003.641.302 1.799.631 2.445l.254.498H4.64c-1.384-.001-1.396-.003-1.329-.283zm14.944-.376c.271-.613.529-1.616.606-2.352.031-.299.066-.282.762.379s.738.735.908 1.631c.098.516.179.952.179.97 0 .017-.618.031-1.373.031h-1.373l.291-.659zm-6.477-4.504a2.173 2.173 0 0 1-2.17-2.17c0-1.196.973-2.17 2.17-2.17s2.17.973 2.17 2.17-.973 2.17-2.17 2.17zm0-3.865c-.935 0-1.696.761-1.696 1.695s.761 1.696 1.696 1.696c.935 0 1.696-.761 1.696-1.696s-.761-1.695-1.696-1.695zM9.455 9.457a.657.657 0 1 1 0 1.314.657.657 0 0 1 0-1.314zm-.357 4.665a.8.8 0 1 1 0 1.6.8.8 0 0 1 0-1.6zm5.212-5.18a1.069 1.069 0 1 1 0 2.138 1.069 1.069 0 0 1 0-2.138zm0 5.75a1.418 1.418 0 1 1 0 2.836 1.418 1.418 0 0 1 0-2.836zM9.447 10.68l.491-.491.729.729-.491.491-.729-.729zm4.066-.336l.539.539-.729.729-.539-.539.729-.729zm-3.572 3.362l.491.491-.729.729-.491-.491.729-.729zm2.721 1.064l.61-.59.779.754-.61.59-.779-.754zm-1.717-2.167a.277.277 0 1 1 0 .554.277.277 0 0 1 0-.554zm.794 0a.277.277 0 1 1 0 .554.277.277 0 0 1 0-.554zm.794 0a.277.277 0 1 1 0 .554.277.277 0 0 1 0-.554z'
+            })
+        ])
     }
 }
 
 const collapsed = ref(false)
 const activeKey = ref<string>('dashboard')
 const showConnectionDropdown = ref(false)
+const message = useMessage()
+
+// 添加新连接对话框
+interface ConnectionFormModel {
+    name: string
+    env: string
+    nameServer: string
+    timeoutSec: number
+    enableACL: boolean
+    accessKey: string
+    secretKey: string
+    remark: string
+}
+
+const showAddConnectionModal = ref(false)
+const isSubmittingConnection = ref(false)
+const connectionFormRef = ref<FormInst | null>(null)
+
+const createDefaultConnectionForm = (): ConnectionFormModel => ({
+    name: '',
+    env: '开发',
+    nameServer: '',
+    timeoutSec: 5,
+    enableACL: false,
+    accessKey: '',
+    secretKey: '',
+    remark: ''
+})
+
+const connectionFormModel = ref<ConnectionFormModel>(createDefaultConnectionForm())
+
+const envOptions = [
+    { label: '生产', value: '生产' },
+    { label: '测试', value: '测试' },
+    { label: '开发', value: '开发' }
+]
+
+const connectionFormRules: FormRules = {
+    name: [{ required: true, message: '请输入连接名称', trigger: ['blur', 'input'] }],
+    env: [{ required: true, message: '请选择环境', trigger: ['change'] }],
+    nameServer: [{ required: true, message: '请输入 NameServer 地址', trigger: ['blur', 'input'] }],
+    timeoutSec: [{ required: true, type: 'number', message: '请设置超时时间', trigger: ['blur', 'change'] }],
+    accessKey: [{
+        validator: (_rule, value: string) => {
+            if (connectionFormModel.value.enableACL && !value.trim()) {
+                return new Error('启用 ACL 时 AccessKey 不能为空')
+            }
+            return true
+        },
+        trigger: ['blur', 'input']
+    }],
+    secretKey: [{
+        validator: (_rule, value: string) => {
+            if (connectionFormModel.value.enableACL && !value.trim()) {
+                return new Error('启用 ACL 时 SecretKey 不能为空')
+            }
+            return true
+        },
+        trigger: ['blur', 'input']
+    }]
+}
+
+const handleACLToggle = (enabled: boolean) => {
+    connectionFormModel.value.enableACL = enabled
+    if (!enabled) {
+        connectionFormModel.value.accessKey = ''
+        connectionFormModel.value.secretKey = ''
+    }
+}
 
 const fallbackInstance: Instance = {
     label: '未连接实例',
@@ -66,13 +157,42 @@ const fallbackInstance: Instance = {
     icon: PeopleOutline
 }
 
-const instances = ref<Instance[]>([
-    { label: '生产环境', value: 'prod', ip: '192.168.1.100:9876', status: 'online', icon: PeopleOutline },
-    { label: '测试环境', value: 'test', ip: '192.168.1.101:9876', status: 'online', icon: LogoGithub },
-    { label: '开发环境', value: 'dev', ip: 'localhost:9876', status: 'offline', icon: SpeedometerOutline }
-])
+const instances = ref<Instance[]>([])
 
-const selectedInstance = ref<string>('prod')
+const selectedInstance = ref<string>('')
+
+// 加载连接列表
+const loadConnections = async (preferredInstance?: string) => {
+    try {
+        const connections = await ConnectionService.GetConnections()
+        instances.value = connections
+            .filter(conn => conn !== null)
+            .map(conn => ({
+                label: conn!.name,
+                value: String(conn!.id),
+                ip: conn!.nameServer,
+                status: conn!.status === 'online' ? 'online' : 'offline' as 'online' | 'offline',
+                icon: ServerOutline
+            }))
+
+        const expectedSelected = preferredInstance ?? selectedInstance.value
+        if (expectedSelected && instances.value.some(item => item.value === expectedSelected)) {
+            selectedInstance.value = expectedSelected
+            return
+        }
+
+        const defaultConn = connections.find(c => c?.isDefault)
+        if (defaultConn && defaultConn.id !== undefined) {
+            selectedInstance.value = String(defaultConn.id)
+        } else if (instances.value.length > 0 && instances.value[0]) {
+            selectedInstance.value = instances.value[0].value
+        } else {
+            selectedInstance.value = ''
+        }
+    } catch (err) {
+        console.error('加载连接列表失败:', err)
+    }
+}
 
 const currentInstance = computed<Instance>(() => {
     return instances.value.find(item => item.value === selectedInstance.value) ?? instances.value[0] ?? fallbackInstance
@@ -127,8 +247,38 @@ const selectInstance = (value: string) => {
 }
 
 const addNewConnection = () => {
-    navigateToPage('connections')
     showConnectionDropdown.value = false
+    connectionFormModel.value = createDefaultConnectionForm()
+    showAddConnectionModal.value = true
+}
+
+// 保存新连接
+let removeConnectionsChangedListener: (() => void) | null = null
+
+const saveNewConnection = async () => {
+    if (!connectionFormRef.value) return
+    await connectionFormRef.value.validate()
+    isSubmittingConnection.value = true
+
+    try {
+        const form = connectionFormModel.value
+        const newConn = await addConnectionCompat({
+            ...form,
+            accessKey: form.accessKey.trim(),
+            secretKey: form.secretKey.trim()
+        })
+        const newConnId = newConn?.id
+        await loadConnections(newConnId !== undefined ? String(newConnId) : undefined)
+        emitConnectionsChanged()
+        message.success('连接创建成功')
+        showAddConnectionModal.value = false
+    } catch (err) {
+        console.error('创建连接失败:', err)
+        const errorMessage = err instanceof Error ? err.message : '创建连接失败'
+        message.error(errorMessage)
+    } finally {
+        isSubmittingConnection.value = false
+    }
 }
 
 const handleConnectionItemClick = (value: string) => {
@@ -146,14 +296,14 @@ const renderConnectionDropdownHeader = () => {
                 {
                     round: true,
                     size: 34,
-                    style: 'margin-right: 12px; background: linear-gradient(135deg, #22c372 0%, #18a058 100%); color: #fff;'
+                    style: 'margin-right: 12px; background: #22c372; color: #fff;'
                 },
                 {
                     default: () => h(NIcon, { size: 16 }, { default: () => h(RocketMQIcon) })
                 }
             ),
             h('div', null, [
-                h('div', null, [h(NText, { depth: 2 }, { default: () => 'RocketMQ 集群列表' })]),
+                h('div', null, [h(NText, { depth: 2 }, { default: () => '集群列表' })]),
                 h('div', { style: 'font-size: 12px;' }, [
                     h(NText, { depth: 3 }, { default: () => `在线 ${onlineInstanceCount.value} · 离线 ${offlineInstanceCount.value}` })
                 ])
@@ -242,16 +392,28 @@ const handleExpand = () => {
     collapsed.value = false
 }
 
-onMounted(() => {
+onMounted(async () => {
+    removeConnectionsChangedListener = onConnectionsChanged(() => {
+        loadConnections()
+    })
+
+    // 加载连接列表
+    await loadConnections()
+
     const cachedCollapsed = readStorage(STORAGE_KEYS.collapsed)
     if (cachedCollapsed !== null) {
         collapsed.value = cachedCollapsed === '1'
     }
 
-    const cachedActiveKey = readStorage(STORAGE_KEYS.activeKey)
-    if (cachedActiveKey && menuKeys.has(cachedActiveKey)) {
-        activeKey.value = cachedActiveKey
-        emit('update:currentPage', cachedActiveKey)
+    const propActiveKey = props.currentPage
+    if (propActiveKey && menuKeys.has(propActiveKey)) {
+        activeKey.value = propActiveKey
+    } else {
+        const cachedActiveKey = readStorage(STORAGE_KEYS.activeKey)
+        if (cachedActiveKey && menuKeys.has(cachedActiveKey)) {
+            activeKey.value = cachedActiveKey
+            emit('update:currentPage', cachedActiveKey)
+        }
     }
 
     const cachedInstance = readStorage(STORAGE_KEYS.selectedInstance)
@@ -271,52 +433,54 @@ watch(activeKey, (value) => {
 watch(selectedInstance, (value) => {
     writeStorage(STORAGE_KEYS.selectedInstance, value)
 })
+
+watch(() => props.currentPage, (value) => {
+    if (!value || !menuKeys.has(value)) return
+    if (activeKey.value !== value) {
+        activeKey.value = value
+    }
+})
+
+onUnmounted(() => {
+    removeConnectionsChangedListener?.()
+    removeConnectionsChangedListener = null
+})
 </script>
 
 <template>
     <n-layout-sider bordered collapse-mode="width" :collapsed-width="64" :width="220" :collapsed="collapsed"
         show-trigger class="sidebar" @collapse="handleCollapse" @expand="handleExpand">
         <div class="instance-selector-wrapper">
-            <n-dropdown trigger="click" placement="bottom-start" :show-arrow="true" :options="connectionDropdownOptions"
-                v-model:show="showConnectionDropdown" :value="selectedInstance" @select="handleConnectionSelect">
-                <div class="instance-card" :class="{ collapsed }">
-                    <template v-if="collapsed">
-                        <n-tooltip placement="right" :show-arrow="true">
-                            <template #trigger>
-                                <div class="instance-card-icon-only">
-                                    <n-icon :size="20">
-                                        <RocketMQIcon />
-                                    </n-icon>
-                                    <span class="status-dot collapsed-dot" :class="currentInstance.status"></span>
-                                </div>
-                            </template>
-                            <div>{{ currentInstance.label }}</div>
-                            <div>{{ currentInstance.ip }}</div>
-                        </n-tooltip>
-                    </template>
-
-                    <template v-else>
-                        <div class="instance-card-content">
-                            <div class="instance-card-icon">
+            <div class="instance-card-list">
+                <n-dropdown trigger="click" placement="right-start" :show-arrow="true"
+                    :options="connectionDropdownOptions" v-model:show="showConnectionDropdown" :value="selectedInstance"
+                    @select="handleConnectionSelect">
+                    <div class="instance-trigger">
+                        <!-- 展开状态：使用 n-card 原生卡片组件 -->
+                        <n-card class="instance-card-wrapper" :bordered="false" size="small">
+                            <div class="instance-card-content">
                                 <n-icon :size="20">
                                     <RocketMQIcon />
                                 </n-icon>
-                            </div>
-                            <div class="instance-card-info">
-                                <div class="instance-card-name">
-                                    {{ currentInstance.label }}
-                                    <span class="status-dot inline" :class="currentInstance.status"></span>
+                                <div class="instance-card-info">
+                                    <div class="instance-card-name">
+                                        {{ currentInstance.label }}
+                                        <n-tag :type="currentInstance.status === 'online' ? 'success' : 'error'"
+                                            size="tiny" round :bordered="false">
+                                            {{ currentInstance.status === 'online' ? '在线' : '离线' }}
+                                        </n-tag>
+                                    </div>
+                                    <div class="instance-card-ip">{{ currentInstance.ip }}</div>
                                 </div>
-                                <div class="instance-card-ip">{{ currentInstance.ip }}</div>
+                                <n-icon :size="16" class="instance-card-arrow"
+                                    :class="{ expanded: showConnectionDropdown }">
+                                    <ChevronDownOutline />
+                                </n-icon>
                             </div>
-                            <n-icon :size="16" class="instance-card-arrow">
-                                <ChevronDownOutline />
-                            </n-icon>
-                        </div>
-                    </template>
-                </div>
-            </n-dropdown>
-
+                        </n-card>
+                    </div>
+                </n-dropdown>
+            </div>
         </div>
 
         <n-menu :value="activeKey" :collapsed="collapsed" :collapsed-width="64" :collapsed-icon-size="20"
@@ -377,6 +541,59 @@ watch(selectedInstance, (value) => {
             </div>
         </div>
     </n-layout-sider>
+
+    <!-- 快速添加连接对话框 -->
+    <n-modal v-model:show="showAddConnectionModal" preset="card" title="添加新连接" style="width: 620px"
+        :mask-closable="false">
+        <n-form ref="connectionFormRef" class="quick-connection-form" :model="connectionFormModel"
+            :rules="connectionFormRules" label-placement="left" label-width="120px">
+            <n-form-item label="连接名称" path="name">
+                <n-input v-model:value="connectionFormModel.name" placeholder="如：生产集群" />
+            </n-form-item>
+            <n-form-item label="环境" path="env">
+                <n-select v-model:value="connectionFormModel.env" :options="envOptions" placeholder="请选择环境" />
+            </n-form-item>
+            <n-form-item label="NameServer" path="nameServer">
+                <n-input v-model:value="connectionFormModel.nameServer" placeholder="如：192.168.1.100:9876" />
+            </n-form-item>
+            <n-form-item label="超时时间" path="timeoutSec">
+                <n-input-number v-model:value="connectionFormModel.timeoutSec" :min="1" :max="60" placeholder="秒"
+                    style="width: 100%" />
+            </n-form-item>
+
+            <n-form-item label="启用 ACL">
+                <n-switch :value="connectionFormModel.enableACL" @update:value="handleACLToggle">
+                    <template #checked>已启用</template>
+                    <template #unchecked>未启用</template>
+                </n-switch>
+            </n-form-item>
+
+            <n-alert v-if="connectionFormModel.enableACL" type="info" :show-icon="false" style="margin-bottom: 12px;">
+                已启用 ACL 鉴权，请填写 AccessKey 与 SecretKey。
+            </n-alert>
+
+            <n-form-item v-if="connectionFormModel.enableACL" label="AccessKey" path="accessKey">
+                <n-input v-model:value="connectionFormModel.accessKey" placeholder="请输入 ACL AccessKey" />
+            </n-form-item>
+
+            <n-form-item v-if="connectionFormModel.enableACL" label="SecretKey" path="secretKey">
+                <n-input v-model:value="connectionFormModel.secretKey" type="password" show-password-on="click"
+                    placeholder="请输入 ACL SecretKey" />
+            </n-form-item>
+
+            <n-form-item label="备注" path="remark">
+                <n-input v-model:value="connectionFormModel.remark" type="textarea" placeholder="连接备注信息（可选）"
+                    :rows="2" />
+            </n-form-item>
+        </n-form>
+
+        <template #footer>
+            <n-space justify="end">
+                <n-button @click="showAddConnectionModal = false">取消</n-button>
+                <n-button type="primary" :loading="isSubmittingConnection" @click="saveNewConnection">确定</n-button>
+            </n-space>
+        </template>
+    </n-modal>
 </template>
 
 <style scoped>
@@ -396,18 +613,13 @@ watch(selectedInstance, (value) => {
     border-bottom: 1px solid var(--border-color, rgba(0, 0, 0, 0.06));
 }
 
-.instance-card {
-    margin: 12px;
-    border-radius: 10px;
-    background: var(--surface-1, #f8f8f8);
-    cursor: pointer;
-    transition: all 0.2s ease;
+/* 展开状态 - 使用 n-card 原生 hover 效果 */
+.instance-card-wrapper {
+    margin: auto;
+    border-radius: 1px;
 }
 
-.instance-card:hover {
-    background: var(--surface-1-hover, #f0f0f0);
-}
-
+/* 折叠状态 - 保持原有图标样式 */
 .instance-card.collapsed {
     display: flex;
     justify-content: center;
@@ -417,6 +629,7 @@ watch(selectedInstance, (value) => {
     margin: 6px 0;
     background: transparent;
     position: relative;
+    cursor: pointer;
 }
 
 .instance-card.collapsed:hover {
@@ -462,19 +675,11 @@ watch(selectedInstance, (value) => {
     filter: saturate(1.06) brightness(1.03);
 }
 
-.rocketmq-icon {
-    display: inline-block;
-    width: 1em;
-    height: 1em;
-    background-color: currentColor;
-    mask: url('https://api.iconify.design/simple-icons/apacherocketmq.svg') no-repeat center / contain;
-    -webkit-mask: url('https://api.iconify.design/simple-icons/apacherocketmq.svg') no-repeat center / contain;
-}
+/* RocketMQ 官方图标已使用内联 SVG，无需额外样式 */
 
 .instance-card-content {
     display: flex;
     align-items: center;
-    padding: 12px;
     gap: 10px;
 }
 
@@ -492,11 +697,6 @@ watch(selectedInstance, (value) => {
     transition: transform 0.2s cubic-bezier(.4, 0, .2, 1), box-shadow 0.2s cubic-bezier(.4, 0, .2, 1), filter 0.2s ease;
 }
 
-.instance-card:hover .instance-card-icon {
-    transform: translateY(-1px);
-    box-shadow: 0 8px 18px rgba(24, 160, 88, 0.26);
-    filter: saturate(1.06) brightness(1.03);
-}
 
 .instance-card-info {
     flex: 1;
@@ -514,7 +714,7 @@ watch(selectedInstance, (value) => {
 
 .instance-card-ip {
     margin-top: 4px;
-    font-size: 12px;
+    font-size: 10px;
     color: var(--text-secondary, #666);
     font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', monospace;
     letter-spacing: 0.2px;
@@ -529,11 +729,17 @@ watch(selectedInstance, (value) => {
 .instance-card-arrow {
     color: #999;
     flex-shrink: 0;
+    transition: transform 0.2s ease;
+    transform-origin: center;
 }
 
+.instance-card-arrow.expanded {
+    transform: rotate(-90deg);
+}
 
-
-
+.instance-card-list {
+    margin-top: 5px;
+}
 
 .status-dot {
     width: 8px;
@@ -674,5 +880,10 @@ watch(selectedInstance, (value) => {
     font-size: 12px;
     color: var(--text-muted, #888);
     margin-top: 1px;
+}
+
+.quick-connection-form :deep(.n-form-item-label) {
+    white-space: nowrap;
+    word-break: keep-all;
 }
 </style>

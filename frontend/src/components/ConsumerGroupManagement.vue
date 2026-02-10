@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, h, ref } from 'vue'
+import { computed, h, onMounted, ref } from 'vue'
 import {
   NButton,
   NCard,
@@ -23,6 +23,8 @@ import {
   useMessage
 } from 'naive-ui'
 import type { DataTableColumns, FormInst, FormRules } from 'naive-ui'
+import * as ConsumerService from '../../bindings/rocket-leaf/internal/service/consumerservice'
+import type { ConsumerGroupItem as BackendConsumerGroupItem } from '../../bindings/rocket-leaf/internal/model/models'
 
 type GroupStatus = 'online' | 'warning' | 'offline'
 type ConsumeMode = 'CLUSTERING' | 'BROADCASTING'
@@ -86,72 +88,59 @@ const consumeModeOptions = [
   { label: '广播消费 (BROADCASTING)', value: 'BROADCASTING' }
 ]
 
-const groupList = ref<ConsumerGroupItem[]>([
-  {
-    id: 1,
-    group: 'order_group',
-    cluster: '生产集群',
-    consumeMode: 'CLUSTERING',
-    status: 'online',
-    onlineClients: 3,
-    topicCount: 2,
-    lag: 128,
-    retryQps: 3,
-    dlq: 0,
-    maxRetry: 16,
-    lastUpdate: '2026-02-09 16:18:20',
-    remark: '订单核心消费组',
-    subscriptions: [
-      { topic: 'order_event', expression: '*', consumeTps: 412 },
-      { topic: 'payment_result', expression: 'pay_success || pay_failed', consumeTps: 162 }
-    ],
-    clients: [
-      { clientId: 'CID-order-01', ip: '10.0.1.11', version: '5.1.4', lastHeartbeat: '2026-02-09 16:18:19' },
-      { clientId: 'CID-order-02', ip: '10.0.1.12', version: '5.1.4', lastHeartbeat: '2026-02-09 16:18:18' },
-      { clientId: 'CID-order-03', ip: '10.0.1.13', version: '5.1.4', lastHeartbeat: '2026-02-09 16:18:18' }
-    ]
-  },
-  {
-    id: 2,
-    group: 'notify_group',
-    cluster: '测试集群',
-    consumeMode: 'BROADCASTING',
-    status: 'warning',
-    onlineClients: 1,
-    topicCount: 1,
-    lag: 684,
-    retryQps: 11,
-    dlq: 4,
-    maxRetry: 8,
-    lastUpdate: '2026-02-09 16:15:02',
-    remark: '通知系统消费组',
-    subscriptions: [
-      { topic: 'notify_event', expression: 'email || sms', consumeTps: 86 }
-    ],
-    clients: [
-      { clientId: 'CID-notify-01', ip: '10.2.0.21', version: '5.1.3', lastHeartbeat: '2026-02-09 16:14:59' }
-    ]
-  },
-  {
-    id: 3,
-    group: 'dev_test_group',
-    cluster: '开发集群',
-    consumeMode: 'CLUSTERING',
-    status: 'offline',
-    onlineClients: 0,
-    topicCount: 1,
-    lag: 0,
-    retryQps: 0,
-    dlq: 0,
-    maxRetry: 5,
-    lastUpdate: '2026-02-09 15:42:16',
-    remark: '开发验证使用',
-    subscriptions: [
-      { topic: 'dev_test_topic', expression: '*', consumeTps: 0 }
-    ],
-    clients: []
+const groupList = ref<ConsumerGroupItem[]>([])
+const isLoading = ref(false)
+
+// 转换后端数据到前端格式
+const mapGroup = (g: BackendConsumerGroupItem | null): ConsumerGroupItem | null => {
+  if (!g) return null
+  return {
+    id: g.id,
+    group: g.group,
+    cluster: g.cluster || '默认集群',
+    consumeMode: (g.consumeMode || 'CLUSTERING') as ConsumeMode,
+    status: (g.status || 'offline') as GroupStatus,
+    onlineClients: g.onlineClients || 0,
+    topicCount: g.topicCount || 0,
+    lag: g.lag || 0,
+    retryQps: g.retryQps || 0,
+    dlq: g.dlq || 0,
+    maxRetry: g.maxRetry || 16,
+    lastUpdate: g.lastUpdate || '-',
+    remark: g.remark || '',
+    subscriptions: (g.subscriptions || []).map(s => ({
+      topic: s.topic,
+      expression: s.expression,
+      consumeTps: s.consumeTps
+    })),
+    clients: (g.clients || []).map(c => ({
+      clientId: c.clientId,
+      ip: c.ip,
+      version: c.version,
+      lastHeartbeat: c.lastHeartbeat
+    }))
   }
-])
+}
+
+// 加载消费者组列表
+const loadGroups = async () => {
+  isLoading.value = true
+  try {
+    const groups = await ConsumerService.GetConsumerGroups()
+    groupList.value = groups
+      .map(mapGroup)
+      .filter((g): g is ConsumerGroupItem => g !== null)
+  } catch (err) {
+    console.error('加载消费者组列表失败:', err)
+    message.error('加载消费者组列表失败')
+  } finally {
+    isLoading.value = false
+  }
+}
+
+onMounted(() => {
+  loadGroups()
+})
 
 const keyword = ref('')
 const selectedCluster = ref<string | null>(null)
