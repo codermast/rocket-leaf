@@ -80,8 +80,8 @@ func main() {
 	// 'URL' is the URL that will be loaded into the webview.
 	app.Window.NewWithOptions(application.WebviewWindowOptions{
 		Title:     "Rocket Leaf",
-		MinWidth:  900,
-		MinHeight: 700,
+		MinWidth:  1000,
+		MinHeight: 800,
 		Mac: application.MacWindow{
 			InvisibleTitleBarHeight: 30,
 			TitleBar: application.MacTitleBar{

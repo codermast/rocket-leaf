@@ -3,6 +3,7 @@ package service
 import (
 	"context"
 	"fmt"
+	"strings"
 	"sync/atomic"
 	"time"
 
@@ -36,27 +37,36 @@ func (s *TopicService) GetTopics() ([]*model.TopicItem, error) {
 		return []*model.TopicItem{}, nil
 	}
 
-	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
-	defer cancel()
+	result := make([]*model.TopicItem, 0)
+	err = executeWithClientRetry(client, func(retryClient *admin.Client) error {
+		ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
+		defer cancel()
 
-	topicList, err := client.FetchAllTopicList(ctx)
+		topicList, callErr := retryClient.FetchAllTopicList(ctx)
+		if callErr != nil {
+			return callErr
+		}
+
+		tmpResult := make([]*model.TopicItem, 0, len(topicList.TopicList))
+		for _, topic := range topicList.TopicList {
+			if isSystemTopic(topic) {
+				continue
+			}
+
+			item := &model.TopicItem{
+				ID:          s.getNextID(),
+				Topic:       topic,
+				LastUpdated: formatNow(),
+			}
+
+			tmpResult = append(tmpResult, item)
+		}
+
+		result = tmpResult
+		return nil
+	})
 	if err != nil {
 		return nil, fmt.Errorf("获取 Topic 列表失败: %w", err)
-	}
-
-	result := make([]*model.TopicItem, 0, len(topicList.TopicList))
-	for _, topic := range topicList.TopicList {
-		if isSystemTopic(topic) {
-			continue
-		}
-
-		item := &model.TopicItem{
-			ID:          s.getNextID(),
-			Topic:       topic,
-			LastUpdated: formatNow(),
-		}
-
-		result = append(result, item)
 	}
 
 	return result, nil
@@ -70,20 +80,29 @@ func (s *TopicService) GetTopicTotal() (int, error) {
 		return 0, nil
 	}
 
-	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
-	defer cancel()
+	total := 0
+	err = executeWithClientRetry(client, func(retryClient *admin.Client) error {
+		ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
+		defer cancel()
 
-	topicList, err := client.FetchAllTopicList(ctx)
+		topicList, callErr := retryClient.FetchAllTopicList(ctx)
+		if callErr != nil {
+			return callErr
+		}
+
+		tmpTotal := 0
+		for _, topic := range topicList.TopicList {
+			if isSystemTopic(topic) {
+				continue
+			}
+			tmpTotal++
+		}
+
+		total = tmpTotal
+		return nil
+	})
 	if err != nil {
 		return 0, fmt.Errorf("获取 Topic 总数失败: %w", err)
-	}
-
-	total := 0
-	for _, topic := range topicList.TopicList {
-		if isSystemTopic(topic) {
-			continue
-		}
-		total++
 	}
 
 	return total, nil
@@ -96,28 +115,37 @@ func (s *TopicService) GetTopicsByCluster(clusterName string) ([]*model.TopicIte
 		return nil, fmt.Errorf("获取客户端失败: %w", err)
 	}
 
-	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
-	defer cancel()
+	result := make([]*model.TopicItem, 0)
+	err = executeWithClientRetry(client, func(retryClient *admin.Client) error {
+		ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
+		defer cancel()
 
-	topicList, err := client.FetchTopicsByCluster(ctx, clusterName)
+		topicList, callErr := retryClient.FetchTopicsByCluster(ctx, clusterName)
+		if callErr != nil {
+			return callErr
+		}
+
+		tmpResult := make([]*model.TopicItem, 0, len(topicList.TopicList))
+		for _, topic := range topicList.TopicList {
+			if isSystemTopic(topic) {
+				continue
+			}
+
+			item := &model.TopicItem{
+				ID:          s.getNextID(),
+				Topic:       topic,
+				Cluster:     clusterName,
+				LastUpdated: formatNow(),
+			}
+
+			tmpResult = append(tmpResult, item)
+		}
+
+		result = tmpResult
+		return nil
+	})
 	if err != nil {
 		return nil, fmt.Errorf("获取集群 Topic 列表失败: %w", err)
-	}
-
-	result := make([]*model.TopicItem, 0, len(topicList.TopicList))
-	for _, topic := range topicList.TopicList {
-		if isSystemTopic(topic) {
-			continue
-		}
-
-		item := &model.TopicItem{
-			ID:          s.getNextID(),
-			Topic:       topic,
-			Cluster:     clusterName,
-			LastUpdated: formatNow(),
-		}
-
-		result = append(result, item)
 	}
 
 	return result, nil
@@ -199,15 +227,31 @@ func (s *TopicService) CreateTopic(topic string, brokerAddr string, readQueue in
 		return fmt.Errorf("获取客户端失败: %w", err)
 	}
 
+	topic = strings.TrimSpace(topic)
+	brokerAddr = strings.TrimSpace(brokerAddr)
+	if topic == "" {
+		return fmt.Errorf("创建 Topic 失败: Topic 名称不能为空")
+	}
+	if brokerAddr == "" {
+		return fmt.Errorf("创建 Topic 失败: Broker 地址不能为空，请先连接集群并选择可用 Broker")
+	}
+	if readQueue <= 0 {
+		readQueue = 4
+	}
+	if writeQueue <= 0 {
+		writeQueue = 4
+	}
+
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 
 	// 使用 CreateTopic 方法
 	config := admin.TopicConfig{
-		TopicName:      topic,
-		ReadQueueNums:  readQueue,
-		WriteQueueNums: writeQueue,
-		Perm:           model.PermToInt(model.TopicPerm(perm)),
+		TopicName:       topic,
+		ReadQueueNums:   readQueue,
+		WriteQueueNums:  writeQueue,
+		Perm:            model.PermToInt(model.TopicPerm(perm)),
+		TopicFilterType: "SINGLE_TAG",
 	}
 
 	err = client.CreateTopic(ctx, brokerAddr, config)
@@ -230,15 +274,93 @@ func (s *TopicService) DeleteTopic(topic string, clusterName string) error {
 		return fmt.Errorf("获取客户端失败: %w", err)
 	}
 
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
-	defer cancel()
-
-	err = client.DeleteTopic(ctx, topic, clusterName)
-	if err != nil {
-		return fmt.Errorf("删除 Topic 失败: %w", err)
+	topic = strings.TrimSpace(topic)
+	clusterName = strings.TrimSpace(clusterName)
+	if topic == "" {
+		return fmt.Errorf("删除 Topic 失败: Topic 名称不能为空")
 	}
 
-	return nil
+	clusterCandidates := make([]string, 0, 4)
+	seenClusters := make(map[string]struct{})
+	appendCluster := func(name string) {
+		name = strings.TrimSpace(name)
+		if name == "" {
+			return
+		}
+		if _, exists := seenClusters[name]; exists {
+			return
+		}
+		seenClusters[name] = struct{}{}
+		clusterCandidates = append(clusterCandidates, name)
+	}
+
+	if clusterName != "" && clusterName != "默认集群" {
+		appendCluster(clusterName)
+	}
+
+	_ = executeWithClientRetry(client, func(retryClient *admin.Client) error {
+		ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+		defer cancel()
+
+		routeInfo, routeErr := retryClient.ExamineTopicRouteInfo(ctx, topic)
+		if routeErr != nil || routeInfo == nil {
+			return routeErr
+		}
+
+		for _, brokerData := range routeInfo.BrokerDatas {
+			if brokerData == nil {
+				continue
+			}
+			appendCluster(brokerData.Cluster)
+		}
+
+		return nil
+	})
+
+	if len(clusterCandidates) == 0 {
+		_ = executeWithClientRetry(client, func(retryClient *admin.Client) error {
+			ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+			defer cancel()
+
+			clusterInfo, clusterErr := retryClient.ExamineBrokerClusterInfo(ctx)
+			if clusterErr != nil || clusterInfo == nil {
+				return clusterErr
+			}
+
+			for name := range clusterInfo.ClusterAddrTable {
+				appendCluster(name)
+			}
+
+			return nil
+		})
+	}
+
+	if len(clusterCandidates) == 0 {
+		return fmt.Errorf("删除 Topic 失败: 未找到可用集群，请先检查连接状态")
+	}
+
+	var lastErr error
+	for _, candidate := range clusterCandidates {
+		callErr := executeWithClientRetry(client, func(retryClient *admin.Client) error {
+			ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+			defer cancel()
+			return retryClient.DeleteTopic(ctx, topic, candidate)
+		})
+		if callErr == nil {
+			return nil
+		}
+
+		lastErr = callErr
+		if strings.Contains(callErr.Error(), "不存在") {
+			continue
+		}
+	}
+
+	if lastErr != nil {
+		return fmt.Errorf("删除 Topic 失败: 已尝试集群 %s，最后错误: %w", strings.Join(clusterCandidates, ", "), lastErr)
+	}
+
+	return fmt.Errorf("删除 Topic 失败: 未能在集群 %s 中删除", strings.Join(clusterCandidates, ", "))
 }
 
 // GetTopicStats 获取 Topic 统计信息

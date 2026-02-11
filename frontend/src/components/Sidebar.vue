@@ -456,8 +456,27 @@ onUnmounted(() => {
                     :options="connectionDropdownOptions" v-model:show="showConnectionDropdown" :value="selectedInstance"
                     @select="handleConnectionSelect">
                     <div class="instance-trigger">
-                        <!-- 展开状态：使用 n-card 原生卡片组件 -->
-                        <n-card class="instance-card-wrapper" :bordered="false" size="small">
+                        <n-popover v-if="collapsed" placement="right" trigger="hover">
+                            <template #trigger>
+                                <div class="instance-popover-trigger">
+                                    <div class="instance-card collapsed">
+                                        <n-badge dot :type="currentInstance.status === 'online' ? 'success' : 'error'">
+                                            <n-avatar>MQ</n-avatar>
+                                        </n-badge>
+                                    </div>
+                                </div>
+                            </template>
+                            <div>
+                                <div style="font-weight: 600;">{{ currentInstance.label }} <n-tag
+                                        :type="currentInstance.status === 'online' ? 'success' : 'error'" size="tiny">
+                                        {{ currentInstance.status === 'online' ? '在线' : '离线' }} </n-tag>
+                                </div>
+                                <div style="font-size: 12px; opacity: 0.78; margin-top: 4px;">
+                                    {{ currentInstance.ip }}
+                                </div>
+                            </div>
+                        </n-popover>
+                        <n-card v-else class="instance-card-wrapper" :bordered="false" size="small">
                             <div class="instance-card-content">
                                 <n-icon :size="20">
                                     <RocketMQIcon />
@@ -613,6 +632,14 @@ onUnmounted(() => {
     border-bottom: 1px solid var(--border-color, rgba(0, 0, 0, 0.06));
 }
 
+.instance-trigger {
+    width: 100%;
+}
+
+.instance-popover-trigger {
+    width: 100%;
+}
+
 /* 展开状态 - 使用 n-card 原生 hover 效果 */
 .instance-card-wrapper {
     margin: auto;
@@ -624,6 +651,7 @@ onUnmounted(() => {
     display: flex;
     justify-content: center;
     align-items: center;
+    width: 100%;
     padding: 0;
     height: var(--menu-item-height, 42px);
     margin: 6px 0;
@@ -653,21 +681,6 @@ onUnmounted(() => {
     background: var(--menu-item-hover-bg, #f3f3f5);
 }
 
-.instance-card-icon-only {
-    position: relative;
-    width: 36px;
-    height: 36px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    border-radius: 8px;
-    background: linear-gradient(135deg, #22c372 0%, #18a058 100%);
-    color: white;
-    flex-shrink: 0;
-    box-shadow: 0 4px 10px rgba(24, 160, 88, 0.24);
-    transition: transform 0.2s cubic-bezier(.4, 0, .2, 1), box-shadow 0.2s cubic-bezier(.4, 0, .2, 1), filter 0.2s ease;
-    z-index: 1;
-}
 
 .instance-card.collapsed:hover .instance-card-icon-only {
     transform: translateY(-1px);

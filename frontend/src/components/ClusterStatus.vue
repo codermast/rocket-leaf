@@ -98,6 +98,86 @@ const createBroker = (seed: BrokerSeed): BrokerNode => ({
   tpsOutHistory: seedHistory(seed.tpsOut)
 })
 
+const pickFirstDefined = (source: Record<string, unknown>, candidates: string[]) => {
+  for (const key of candidates) {
+    const value = source[key]
+    if (value !== undefined && value !== null) {
+      return value
+    }
+  }
+  return undefined
+}
+
+const toSafeString = (value: unknown, fallback = '') => {
+  if (typeof value === 'string') {
+    return value
+  }
+  if (typeof value === 'number' || typeof value === 'boolean') {
+    return String(value)
+  }
+  return fallback
+}
+
+const toSafeNumber = (value: unknown, fallback = 0) => {
+  if (typeof value === 'number' && Number.isFinite(value)) {
+    return value
+  }
+  if (typeof value === 'string') {
+    const parsed = Number(value)
+    if (Number.isFinite(parsed)) {
+      return parsed
+    }
+  }
+  return fallback
+}
+
+const normalizeNodeStatus = (value: unknown, fallback: NodeStatus = 'offline'): NodeStatus => {
+  if (value === 'online' || value === 'warning' || value === 'offline') {
+    return value
+  }
+  return fallback
+}
+
+const normalizeBrokerRole = (value: unknown): BrokerRole => {
+  if (value === 'MASTER' || value === 'SLAVE') {
+    return value
+  }
+  return 'MASTER'
+}
+
+const mapBrokerNode = (broker: BackendBrokerNode | null, index: number): BrokerNode | null => {
+  if (!broker) return null
+
+  const raw = broker as unknown as Record<string, unknown>
+  const brokerName = toSafeString(pickFirstDefined(raw, ['brokerName', 'BrokerName']), '')
+  const address = toSafeString(pickFirstDefined(raw, ['address', 'Address']), '')
+  if (!brokerName && !address) {
+    return null
+  }
+
+  return createBroker({
+    id: toSafeNumber(pickFirstDefined(raw, ['id', 'ID']), index + 1),
+    cluster: toSafeString(pickFirstDefined(raw, ['cluster', 'Cluster']), '默认集群'),
+    brokerName: brokerName || `Broker-${index + 1}`,
+    brokerId: toSafeNumber(pickFirstDefined(raw, ['brokerId', 'BrokerID']), 0),
+    role: normalizeBrokerRole(pickFirstDefined(raw, ['role', 'Role'])),
+    address,
+    haAddress: toSafeString(pickFirstDefined(raw, ['haAddress', 'HAAddress']), ''),
+    version: toSafeString(pickFirstDefined(raw, ['version', 'Version']), '-'),
+    status: normalizeNodeStatus(pickFirstDefined(raw, ['status', 'Status']), 'offline'),
+    topics: toSafeNumber(pickFirstDefined(raw, ['topics', 'Topics']), 0),
+    groups: toSafeNumber(pickFirstDefined(raw, ['groups', 'Groups']), 0),
+    tpsIn: toSafeNumber(pickFirstDefined(raw, ['tpsIn', 'TpsIn']), 0),
+    tpsOut: toSafeNumber(pickFirstDefined(raw, ['tpsOut', 'TpsOut']), 0),
+    msgInToday: toSafeNumber(pickFirstDefined(raw, ['msgInToday', 'MsgInToday']), 0),
+    msgOutToday: toSafeNumber(pickFirstDefined(raw, ['msgOutToday', 'MsgOutToday']), 0),
+    commitLogDiskUsage: toSafeNumber(pickFirstDefined(raw, ['commitLogDiskUsage', 'CommitLogDiskUsage']), 0),
+    consumeQueueDiskUsage: toSafeNumber(pickFirstDefined(raw, ['consumeQueueDiskUsage', 'ConsumeQueueDiskUsage']), 0),
+    lastUpdate: toSafeString(pickFirstDefined(raw, ['lastUpdate', 'LastUpdate']), '-'),
+    remark: toSafeString(pickFirstDefined(raw, ['remark', 'Remark']), '')
+  })
+}
+
 const buildSparklinePoints = (series: number[]) => {
   if (!series.length) return ''
   if (series.length === 1) return `0,12 100,12`
@@ -150,28 +230,8 @@ const loadBrokers = async () => {
   try {
     const brokers = await ClusterService.GetBrokers()
     brokerList.value = brokers
-      .filter((b): b is BackendBrokerNode => b !== null)
-      .map(b => createBroker({
-        id: b.id,
-        cluster: b.cluster || '默认集群',
-        brokerName: b.brokerName,
-        brokerId: b.brokerId,
-        role: (b.role || 'MASTER') as BrokerRole,
-        address: b.address,
-        haAddress: b.haAddress || '',
-        version: b.version || '-',
-        status: (b.status || 'offline') as NodeStatus,
-        topics: b.topics || 0,
-        groups: b.groups || 0,
-        tpsIn: b.tpsIn || 0,
-        tpsOut: b.tpsOut || 0,
-        msgInToday: b.msgInToday || 0,
-        msgOutToday: b.msgOutToday || 0,
-        commitLogDiskUsage: b.commitLogDiskUsage || 0,
-        consumeQueueDiskUsage: b.consumeQueueDiskUsage || 0,
-        lastUpdate: b.lastUpdate || '-',
-        remark: b.remark || ''
-      }))
+      .map((b, index) => mapBrokerNode(b, index))
+      .filter((b): b is BrokerNode => b !== null)
   } catch (err) {
     console.error('加载 Broker 列表失败:', err)
     const errorMessage = err instanceof Error ? err.message : '加载 Broker 列表失败'

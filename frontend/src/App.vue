@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onMounted, onUnmounted, reactive, ref, watch, watchEffect } from 'vue'
+import { computed, markRaw, onMounted, onUnmounted, reactive, ref, watch, watchEffect } from 'vue'
 import {
   NLayout,
   NLayoutContent,
@@ -14,7 +14,9 @@ import {
   NFormItem,
   NRadioGroup,
   NRadio,
-  darkTheme
+  darkTheme,
+  zhCN,
+  dateZhCN
 } from 'naive-ui'
 import TitleBar from './components/TitleBar.vue'
 import Sidebar from './components/Sidebar.vue'
@@ -28,6 +30,7 @@ import ClusterStatus from './components/ClusterStatus.vue'
 import ConnectionGate from './components/ConnectionGate.vue'
 import * as ConnectionService from '../bindings/rocket-leaf/internal/service/connectionservice'
 import type { Connection } from '../bindings/rocket-leaf/internal/model/models'
+import { onConnectionsChanged } from './utils/connectionEvents'
 
 type ThemeMode = 'light' | 'dark' | 'system'
 
@@ -63,6 +66,7 @@ const settings = reactive<AppSettings>({ ...DEFAULT_SETTINGS })
 let mediaQuery: MediaQueryList | undefined
 let mediaQueryListener: ((event: MediaQueryListEvent) => void) | undefined
 let themeTransitionTimer: number | undefined
+let removeConnectionsChangedListener: (() => void) | null = null
 const themeTransitionClass = 'theme-switching'
 
 const isDark = computed(() => {
@@ -100,6 +104,20 @@ const connectionGateStatus = computed<ConnectionGateStatus>(() => {
 const shouldShowConnectionGate = computed(() => {
   if (shouldBypassConnectionGate.value) return false
   return connectionGateStatus.value !== 'ready'
+})
+
+const contentComponentMap = {
+  dashboard: markRaw(DashboardContent),
+  topics: markRaw(TopicManagement),
+  'consumer-groups': markRaw(ConsumerGroupManagement),
+  messages: markRaw(MessageQuery),
+  cluster: markRaw(ClusterStatus)
+} as const
+
+type ContentPageKey = keyof typeof contentComponentMap
+
+const currentContentComponent = computed(() => {
+  return contentComponentMap[currentPage.value as ContentPageKey] ?? null
 })
 
 const mapConnection = (conn: Connection | null): ConnectionViewItem | null => {
@@ -200,6 +218,9 @@ const loadSettings = () => {
 onMounted(() => {
   loadSettings()
   loadConnectionState()
+  removeConnectionsChangedListener = onConnectionsChanged(() => {
+    loadConnectionState()
+  })
 
   if (typeof window !== 'undefined' && typeof window.matchMedia === 'function') {
     mediaQuery = window.matchMedia('(prefers-color-scheme: dark)')
@@ -218,18 +239,14 @@ onUnmounted(() => {
   if (mediaQuery && mediaQueryListener) {
     mediaQuery.removeEventListener('change', mediaQueryListener)
   }
+  removeConnectionsChangedListener?.()
+  removeConnectionsChangedListener = null
 })
 
 watch(settings, (value) => {
   if (typeof window === 'undefined') return
   window.localStorage.setItem(SETTINGS_STORAGE_KEY, JSON.stringify(value))
 }, { deep: true })
-
-watch(currentPage, () => {
-  if (!shouldBypassConnectionGate.value) {
-    loadConnectionState()
-  }
-})
 
 watchEffect(() => {
   if (typeof document !== 'undefined') {
@@ -239,7 +256,7 @@ watchEffect(() => {
 </script>
 
 <template>
-  <n-config-provider :theme="isDark ? darkTheme : null">
+  <n-config-provider :theme="isDark ? darkTheme : null" :locale="zhCN" :date-locale="dateZhCN">
     <n-global-style />
     <n-message-provider>
       <div class="app-container">
@@ -250,27 +267,16 @@ watchEffect(() => {
             <ContentTopBar :currentPage="currentPage" :isDark="isDark" @toggle-theme="toggleTheme" />
             <n-layout-content class="content">
               <ConnectionManagement v-if="currentPage === 'connections'" />
-              <div
-                v-else-if="shouldShowConnectionGate"
-                class="content-center-stage"
-              >
-                <ConnectionGate
-                  :status="connectionGateStatus as 'empty' | 'no-default' | 'default-offline'"
-                  :current-page-label="currentPageLabel"
-                  :connection-count="connections.length"
-                  :default-connection-name="defaultConnection?.name || ''"
-                  :loading="isLoadingConnectionState"
-                  :testing-default="isTestingDefaultConnection"
-                  @open-connections="gotoConnectionManagement"
-                  @refresh="loadConnectionState"
-                  @test-default="testDefaultConnection"
-                />
+              <div v-else-if="shouldShowConnectionGate" class="content-center-stage">
+                <ConnectionGate :status="connectionGateStatus as 'empty' | 'no-default' | 'default-offline'"
+                  :current-page-label="currentPageLabel" :connection-count="connections.length"
+                  :default-connection-name="defaultConnection?.name || ''" :loading="isLoadingConnectionState"
+                  :testing-default="isTestingDefaultConnection" @open-connections="gotoConnectionManagement"
+                  @refresh="loadConnectionState" @test-default="testDefaultConnection" />
               </div>
-              <DashboardContent v-else-if="currentPage === 'dashboard'" />
-              <TopicManagement v-else-if="currentPage === 'topics'" />
-              <ConsumerGroupManagement v-else-if="currentPage === 'consumer-groups'" />
-              <MessageQuery v-else-if="currentPage === 'messages'" />
-              <ClusterStatus v-else-if="currentPage === 'cluster'" />
+              <keep-alive v-else-if="currentContentComponent">
+                <component :is="currentContentComponent" />
+              </keep-alive>
               <div v-else class="placeholder">
                 <h1>功能开发中</h1>
                 <p>当前页面：{{ currentPage }}</p>

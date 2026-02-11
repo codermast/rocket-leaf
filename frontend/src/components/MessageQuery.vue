@@ -428,29 +428,104 @@ const handleReset = () => {
 
 const isSearching = ref(false)
 
+const pickFirstDefined = (source: Record<string, unknown>, candidates: string[]) => {
+  for (const key of candidates) {
+    const value = source[key]
+    if (value !== undefined && value !== null) {
+      return value
+    }
+  }
+  return undefined
+}
+
+const toSafeString = (value: unknown, fallback = '') => {
+  if (typeof value === 'string') {
+    return value
+  }
+  if (typeof value === 'number' || typeof value === 'boolean') {
+    return String(value)
+  }
+  return fallback
+}
+
+const toSafeNumber = (value: unknown, fallback = 0) => {
+  if (typeof value === 'number' && Number.isFinite(value)) {
+    return value
+  }
+  if (typeof value === 'string') {
+    const parsed = Number(value)
+    if (Number.isFinite(parsed)) {
+      return parsed
+    }
+  }
+  return fallback
+}
+
+const normalizeMessageStatus = (value: unknown): MessageStatus => {
+  if (value === 'normal' || value === 'retry' || value === 'dlq') {
+    return value
+  }
+  return 'normal'
+}
+
+const normalizeProperties = (value: unknown): Record<string, string> => {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) {
+    return {}
+  }
+
+  const entries = Object.entries(value as Record<string, unknown>)
+  return Object.fromEntries(
+    entries
+      .filter(([key]) => key.trim().length > 0)
+      .map(([key, val]) => [key, toSafeString(val, '')])
+  )
+}
+
 // 转换后端消息到前端格式
 const mapMessage = (msg: BackendMessageItem | null, index: number): MessageItem | null => {
   if (!msg) return null
+
+  const raw = msg as unknown as Record<string, unknown>
+  const storeTimestamp = toSafeNumber(
+    pickFirstDefined(raw, ['storeTimestamp', 'StoreTimestamp']),
+    Date.now()
+  )
+
   return {
-    id: msg.id || index + 1,
-    cluster: msg.cluster || '默认集群',
-    topic: msg.topic,
-    messageId: msg.messageId,
-    tags: msg.tags || '',
-    keys: msg.keys || '',
-    producerGroup: msg.producerGroup || '',
-    queueId: msg.queueId || 0,
-    queueOffset: msg.queueOffset || 0,
-    storeHost: msg.storeHost || '',
-    bornHost: msg.bornHost || '',
-    storeTime: msg.storeTime || '',
-    storeTimestamp: msg.storeTimestamp || Date.now(),
-    status: (msg.status || 'normal') as MessageStatus,
-    retryTimes: msg.retryTimes || 0,
-    body: msg.body || '',
-    properties: Object.fromEntries(
-      Object.entries(msg.properties || {}).filter(([, v]) => v !== undefined)
-    ) as Record<string, string>
+    id: toSafeNumber(pickFirstDefined(raw, ['id', 'ID']), index + 1),
+    cluster: toSafeString(pickFirstDefined(raw, ['cluster', 'Cluster']), '默认集群'),
+    topic: toSafeString(pickFirstDefined(raw, ['topic', 'Topic']), ''),
+    messageId: toSafeString(pickFirstDefined(raw, ['messageId', 'MessageID', 'msgId', 'MsgId']), ''),
+    tags: toSafeString(pickFirstDefined(raw, ['tags', 'Tags']), ''),
+    keys: toSafeString(pickFirstDefined(raw, ['keys', 'Keys']), ''),
+    producerGroup: toSafeString(pickFirstDefined(raw, ['producerGroup', 'ProducerGroup']), ''),
+    queueId: toSafeNumber(pickFirstDefined(raw, ['queueId', 'QueueID']), 0),
+    queueOffset: toSafeNumber(pickFirstDefined(raw, ['queueOffset', 'QueueOffset']), 0),
+    storeHost: toSafeString(pickFirstDefined(raw, ['storeHost', 'StoreHost']), ''),
+    bornHost: toSafeString(pickFirstDefined(raw, ['bornHost', 'BornHost']), ''),
+    storeTime: toSafeString(
+      pickFirstDefined(raw, ['storeTime', 'StoreTime']),
+      formatDateTime(new Date(storeTimestamp))
+    ),
+    storeTimestamp,
+    status: normalizeMessageStatus(pickFirstDefined(raw, ['status', 'Status'])),
+    retryTimes: toSafeNumber(pickFirstDefined(raw, ['retryTimes', 'RetryTimes']), 0),
+    body: toSafeString(pickFirstDefined(raw, ['body', 'Body']), ''),
+    properties: normalizeProperties(pickFirstDefined(raw, ['properties', 'Properties']))
+  }
+}
+
+const queryByTopic = async (topic: string, key: string) => {
+  const results = await MessageService.QueryMessages(topic, key, 50)
+  const mappedResults = results
+    .map((msg, idx) => mapMessage(msg, idx))
+    .filter((m): m is MessageItem => m !== null)
+
+  if (mappedResults.length > 0) {
+    messageList.value = mappedResults
+    message.success(`查询完成，共 ${mappedResults.length} 条消息`)
+  } else {
+    message.info('查询完成，但没有匹配结果')
   }
 }
 
@@ -460,7 +535,17 @@ const handleSearch = async () => {
   const keyKeyword = messageKey.value.trim()
 
   if (!idKeyword && !keyKeyword) {
-    // 未输入 Message ID / Key 时，只做本地筛选，避免误清空列表
+    if (topic) {
+      isSearching.value = true
+      try {
+        await queryByTopic(topic, '')
+      } finally {
+        isSearching.value = false
+      }
+      return
+    }
+
+    // 未输入 Message ID / Key 且未选择 Topic 时，只做本地筛选
     message.success(`筛选完成，共 ${filteredMessages.value.length} 条消息`)
     return
   }
@@ -493,17 +578,7 @@ const handleSearch = async () => {
     }
 
     if (topic) {
-      const results = await MessageService.QueryMessages(topic, keyKeyword, 50)
-      const mappedResults = results
-        .map((msg, idx) => mapMessage(msg, idx))
-        .filter((m): m is MessageItem => m !== null)
-
-      if (mappedResults.length > 0) {
-        messageList.value = mappedResults
-        message.success(`查询完成，共 ${mappedResults.length} 条消息`)
-      } else {
-        message.info('查询完成，但没有匹配结果')
-      }
+      await queryByTopic(topic, keyKeyword)
       return
     }
 

@@ -23,7 +23,12 @@ import {
 } from 'naive-ui'
 import type { DataTableColumns, FormInst, FormRules } from 'naive-ui'
 import * as TopicService from '../../bindings/rocket-leaf/internal/service/topicservice'
-import type { TopicItem as BackendTopicItem, TopicRouteItem as BackendRouteItem } from '../../bindings/rocket-leaf/internal/model/models'
+import * as ClusterService from '../../bindings/rocket-leaf/internal/service/clusterservice'
+import type {
+  BrokerNode as BackendBrokerNode,
+  TopicItem as BackendTopicItem,
+  TopicRouteItem as BackendRouteItem
+} from '../../bindings/rocket-leaf/internal/model/models'
 
 type TopicPerm = 'RW' | 'R' | 'W' | 'DENY'
 type TopicMessageType = 'Normal' | 'FIFO' | 'Delay'
@@ -165,6 +170,34 @@ const formRules: FormRules = {
   messageType: [{ required: true, message: '请选择消息类型', trigger: ['change'] }]
 }
 
+const resolveBrokerAddr = async (clusterName: string): Promise<string> => {
+  const brokers = await ClusterService.GetBrokers()
+  const availableBrokers = brokers.filter((broker): broker is BackendBrokerNode => {
+    return !!broker && !!broker.address && broker.address.trim().length > 0
+  })
+
+  if (availableBrokers.length === 0) {
+    throw new Error('未获取到可用 Broker 地址，请先检查默认连接和集群状态')
+  }
+
+  const normalizedCluster = clusterName.trim()
+  const clusterMatchedBrokers = normalizedCluster
+    ? availableBrokers.filter(broker => (broker.cluster || '').trim() === normalizedCluster)
+    : availableBrokers
+
+  const candidateBrokers = clusterMatchedBrokers.length > 0 ? clusterMatchedBrokers : availableBrokers
+  const masterBroker = candidateBrokers.find(broker => {
+    return (broker.role || '').toUpperCase() === 'MASTER' || broker.brokerId === 0
+  })
+
+  const brokerAddr = (masterBroker?.address || candidateBrokers[0]?.address || '').trim()
+  if (!brokerAddr) {
+    throw new Error('未能解析可用 Broker 地址，请稍后重试')
+  }
+
+  return brokerAddr
+}
+
 const filteredTopics = computed(() => {
   const search = keyword.value.trim().toLowerCase()
   return topicList.value.filter((item) => {
@@ -237,8 +270,7 @@ const saveTopic = async () => {
 
   try {
     const payload = formModel.value
-    // 注意：需要先获取 brokerAddr，这里暂时使用空字符串
-    const brokerAddr = '' // TODO: 从集群信息中获取
+    const brokerAddr = await resolveBrokerAddr(payload.cluster)
 
     if (editingId.value === null) {
       await TopicService.CreateTopic(

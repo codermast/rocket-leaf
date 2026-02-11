@@ -297,24 +297,24 @@ const saveConnection = async () => {
   }
 }
 
-const tableScrollX = 1160
+const tableScrollX = 900
 
 const columns: DataTableColumns<ConnectionItem> = [
   {
     title: '连接名称',
     key: 'name',
-    minWidth: 180,
+    width: 120,
     render: (row) => h('div', { class: 'name-cell' }, [
       row.name,
       row.isDefault ? h(NTag, { size: 'small', type: 'info', style: 'margin-left: 8px' }, { default: () => '默认' }) : null
     ])
   },
-  { title: '环境', key: 'env', width: 90 },
-  { title: 'NameServer', key: 'nameServer', minWidth: 220, ellipsis: { tooltip: true } },
+  { title: '环境', key: 'env', width: 60 },
+  { title: 'NameServer', key: 'nameServer', minWidth: 90, ellipsis: { tooltip: true } },
   {
     title: '状态',
     key: 'status',
-    width: 90,
+    width: 60,
     render: (row) => h(NTag, {
       type: row.status === 'online' ? 'success' : row.status === 'offline' ? 'error' : 'warning',
       size: 'small'
@@ -325,7 +325,7 @@ const columns: DataTableColumns<ConnectionItem> = [
   {
     title: '操作',
     key: 'actions',
-    width: 280,
+    width: 220,
     render: (row) => h(NSpace, { size: 'small' }, {
       default: () => [
         h(NButton, { text: true, type: 'primary', onClick: () => testConnection(row.id), loading: testingIds.value.includes(row.id) }, { default: () => '测试' }),
@@ -365,7 +365,7 @@ const columns: DataTableColumns<ConnectionItem> = [
 
     <!-- 数据表格 -->
     <NDataTable :columns="columns" :data="filteredConnections" :scroll-x="tableScrollX" :loading="isLoading"
-      :bordered="false" striped class="connection-table" />
+      :bordered="true" striped class="connection-table" />
 
     <!-- 编辑弹窗 -->
     <NModal v-model:show="showEditor" preset="card" :title="editingId === null ? '新建连接' : '编辑连接'" style="width: 620px"
@@ -401,7 +401,8 @@ const columns: DataTableColumns<ConnectionItem> = [
         </NFormItem>
 
         <NFormItem v-if="formModel.enableACL" label="SecretKey" path="secretKey">
-          <NInput v-model:value="formModel.secretKey" type="password" show-password-on="click" placeholder="请输入 ACL SecretKey" />
+          <NInput v-model:value="formModel.secretKey" type="password" show-password-on="click"
+            placeholder="请输入 ACL SecretKey" />
         </NFormItem>
 
         <NFormItem label="备注" path="remark">

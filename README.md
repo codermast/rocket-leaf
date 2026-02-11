@@ -35,7 +35,7 @@
 - 多连接配置管理（添加/编辑/删除）
 - 快速切换不同 RocketMQ 集群
 - 连接状态实时检测
-- 连接信息本地加密存储
+- 连接配置本地 JSON 持久化（重启不丢失）
 
 ### 📋 Topic 管理
 - Topic 列表展示与搜索过滤
@@ -108,6 +108,14 @@ go mod download
 ```bash
 wails3 dev
 ```
+
+### 连接配置存储位置
+
+连接管理数据会持久化到本地 JSON 文件：
+
+- macOS: `~/Library/Application Support/rocket-leaf/connections.json`
+- Linux: `~/.config/rocket-leaf/connections.json`
+- Windows: `%AppData%\\rocket-leaf\\connections.json`
 
 ### 构建发布版本
 

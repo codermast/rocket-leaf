@@ -8,6 +8,8 @@ import (
 
 	"rocket-leaf/internal/model"
 	"rocket-leaf/internal/rocketmq"
+
+	admin "github.com/codermast/rocketmq-admin-go"
 )
 
 // ClusterService 集群状态服务
@@ -33,33 +35,59 @@ func (s *ClusterService) GetClusterInfo() (*model.ClusterInfo, error) {
 		}, nil
 	}
 
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
-	defer cancel()
+	var result *model.ClusterInfo
+	err = executeWithClientRetry(client, func(retryClient *admin.Client) error {
+		ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+		defer cancel()
 
-	// 获取集群信息
-	clusterInfo, err := client.ExamineBrokerClusterInfo(ctx)
-	if err != nil {
-		return nil, fmt.Errorf("获取集群信息失败: %w", err)
-	}
+		clusterInfo, callErr := retryClient.ExamineBrokerClusterInfo(ctx)
+		if callErr != nil {
+			return callErr
+		}
 
-	result := &model.ClusterInfo{
-		NameServers: client.GetNameServerAddressList(),
-		Brokers:     make([]*model.BrokerNode, 0),
-	}
+		tmpResult := &model.ClusterInfo{
+			NameServers: retryClient.GetNameServerAddressList(),
+			Brokers:     make([]*model.BrokerNode, 0),
+		}
 
-	// 统计集群信息
-	brokerID := 1
-	for clusterName, brokerNames := range clusterInfo.ClusterAddrTable {
-		result.ClusterName = clusterName
+		brokerClusterMap := make(map[string]string)
+		for clusterName, brokerNames := range clusterInfo.ClusterAddrTable {
+			if tmpResult.ClusterName == "" {
+				tmpResult.ClusterName = clusterName
+			}
 
-		for _, brokerName := range brokerNames {
-			brokerData, exists := clusterInfo.BrokerAddrTable[brokerName]
-			if !exists {
+			for _, brokerName := range brokerNames {
+				if brokerName == "" {
+					continue
+				}
+				if _, exists := brokerClusterMap[brokerName]; !exists {
+					brokerClusterMap[brokerName] = clusterName
+				}
+			}
+		}
+
+		brokerID := 1
+		for brokerName, brokerData := range clusterInfo.BrokerAddrTable {
+			if brokerData == nil {
 				continue
 			}
 
-			// BrokerAddrs 是 map[string]string，key 是 brokerId 的字符串形式
+			clusterName := brokerData.Cluster
+			if clusterName == "" {
+				clusterName = brokerClusterMap[brokerName]
+			}
+			if clusterName == "" {
+				clusterName = "默认集群"
+			}
+			if tmpResult.ClusterName == "" {
+				tmpResult.ClusterName = clusterName
+			}
+
 			for brokerIDStr, addr := range brokerData.BrokerAddrs {
+				if addr == "" {
+					continue
+				}
+
 				role := model.RoleSlave
 				if brokerIDStr == "0" {
 					role = model.RoleMaster
@@ -77,14 +105,20 @@ func (s *ClusterService) GetClusterInfo() (*model.ClusterInfo, error) {
 					LastUpdate: formatNow(),
 				}
 
-				result.Brokers = append(result.Brokers, broker)
+				tmpResult.Brokers = append(tmpResult.Brokers, broker)
 				brokerID++
 			}
 		}
-	}
 
-	result.TotalBrokers = len(result.Brokers)
-	result.OnlineBrokers = len(result.Brokers)
+		tmpResult.TotalBrokers = len(tmpResult.Brokers)
+		tmpResult.OnlineBrokers = len(tmpResult.Brokers)
+		result = tmpResult
+
+		return nil
+	})
+	if err != nil {
+		return nil, fmt.Errorf("获取集群信息失败: %w", err)
+	}
 
 	return result, nil
 }
@@ -93,7 +127,7 @@ func (s *ClusterService) GetClusterInfo() (*model.ClusterInfo, error) {
 func (s *ClusterService) GetBrokers() ([]*model.BrokerNode, error) {
 	clusterInfo, err := s.GetClusterInfo()
 	if err != nil {
-		return []*model.BrokerNode{}, nil
+		return nil, err
 	}
 	return clusterInfo.Brokers, nil
 }
