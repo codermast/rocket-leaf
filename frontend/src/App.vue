@@ -10,6 +10,7 @@ import {
   NButton,
   NSpace,
   NMessageProvider,
+  NDialogProvider,
   NForm,
   NFormItem,
   NRadioGroup,
@@ -258,64 +259,66 @@ watchEffect(() => {
 <template>
   <n-config-provider :theme="isDark ? darkTheme : null" :locale="zhCN" :date-locale="dateZhCN">
     <n-global-style />
-    <n-message-provider>
-      <div class="app-container">
-        <TitleBar />
-        <n-layout has-sider class="main-layout">
-          <Sidebar :current-page="currentPage" @update:currentPage="handlePageChange" @open:settings="openSettings" />
-          <n-layout class="content-wrapper">
-            <ContentTopBar :currentPage="currentPage" :isDark="isDark" @toggle-theme="toggleTheme" />
-            <n-layout-content class="content">
-              <ConnectionManagement v-if="currentPage === 'connections'" />
-              <div v-else-if="shouldShowConnectionGate" class="content-center-stage">
-                <ConnectionGate :status="connectionGateStatus as 'empty' | 'no-default' | 'default-offline'"
-                  :current-page-label="currentPageLabel" :connection-count="connections.length"
-                  :default-connection-name="defaultConnection?.name || ''" :loading="isLoadingConnectionState"
-                  :testing-default="isTestingDefaultConnection" @open-connections="gotoConnectionManagement"
-                  @refresh="loadConnectionState" @test-default="testDefaultConnection" />
-              </div>
-              <keep-alive v-else-if="currentContentComponent">
-                <component :is="currentContentComponent" />
-              </keep-alive>
-              <div v-else class="placeholder">
-                <h1>功能开发中</h1>
-                <p>当前页面：{{ currentPage }}</p>
-                <p>请继续从左侧菜单切换</p>
-              </div>
+    <n-dialog-provider>
+      <n-message-provider>
+        <div class="app-container">
+          <TitleBar />
+          <n-layout has-sider class="main-layout">
+            <Sidebar :current-page="currentPage" @update:currentPage="handlePageChange" @open:settings="openSettings" />
+            <n-layout class="content-wrapper">
+              <ContentTopBar :currentPage="currentPage" :isDark="isDark" @toggle-theme="toggleTheme" />
+              <n-layout-content class="content">
+                <ConnectionManagement v-if="currentPage === 'connections'" />
+                <div v-else-if="shouldShowConnectionGate" class="content-center-stage">
+                  <ConnectionGate :status="connectionGateStatus as 'empty' | 'no-default' | 'default-offline'"
+                    :current-page-label="currentPageLabel" :connection-count="connections.length"
+                    :default-connection-name="defaultConnection?.name || ''" :loading="isLoadingConnectionState"
+                    :testing-default="isTestingDefaultConnection" @open-connections="gotoConnectionManagement"
+                    @refresh="loadConnectionState" @test-default="testDefaultConnection" />
+                </div>
+                <keep-alive v-else-if="currentContentComponent">
+                  <component :is="currentContentComponent" />
+                </keep-alive>
+                <div v-else class="placeholder">
+                  <h1>功能开发中</h1>
+                  <p>当前页面：{{ currentPage }}</p>
+                  <p>请继续从左侧菜单切换</p>
+                </div>
 
-              <div v-if="connectionStateError" class="connection-error-tip">{{ connectionStateError }}</div>
-            </n-layout-content>
+                <div v-if="connectionStateError" class="connection-error-tip">{{ connectionStateError }}</div>
+              </n-layout-content>
+            </n-layout>
           </n-layout>
-        </n-layout>
-      </div>
+        </div>
 
-      <n-modal v-model:show="showSettings" :mask-closable="true" :auto-focus="false">
-        <n-card title="系统设置" size="small" class="settings-card" :bordered="false">
-          <div class="settings-body">
-            <n-form label-placement="left" label-width="96" :show-feedback="false">
-              <n-form-item label="主题模式">
-                <n-radio-group v-model:value="settings.themeMode">
-                  <n-space>
-                    <n-radio value="light">浅色</n-radio>
-                    <n-radio value="dark">深色</n-radio>
-                    <n-radio value="system">跟随系统</n-radio>
-                  </n-space>
-                </n-radio-group>
-              </n-form-item>
-            </n-form>
-          </div>
+        <n-modal v-model:show="showSettings" :mask-closable="true" :auto-focus="false">
+          <n-card title="系统设置" size="small" class="settings-card" :bordered="false">
+            <div class="settings-body">
+              <n-form label-placement="left" label-width="96" :show-feedback="false">
+                <n-form-item label="主题模式">
+                  <n-radio-group v-model:value="settings.themeMode">
+                    <n-space>
+                      <n-radio value="light">浅色</n-radio>
+                      <n-radio value="dark">深色</n-radio>
+                      <n-radio value="system">跟随系统</n-radio>
+                    </n-space>
+                  </n-radio-group>
+                </n-form-item>
+              </n-form>
+            </div>
 
-          <template #footer>
-            <n-space justify="space-between">
-              <n-button quaternary @click="resetSettings">恢复默认</n-button>
-              <n-space>
-                <n-button @click="showSettings = false">关闭</n-button>
+            <template #footer>
+              <n-space justify="space-between">
+                <n-button quaternary @click="resetSettings">恢复默认</n-button>
+                <n-space>
+                  <n-button @click="showSettings = false">关闭</n-button>
+                </n-space>
               </n-space>
-            </n-space>
-          </template>
-        </n-card>
-      </n-modal>
-    </n-message-provider>
+            </template>
+          </n-card>
+        </n-modal>
+      </n-message-provider>
+    </n-dialog-provider>
   </n-config-provider>
 </template>
 

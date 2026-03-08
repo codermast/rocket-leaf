@@ -2,6 +2,12 @@
 // TitleBar.vue
 // 跨平台标题栏组件
 import { ref, computed, onMounted, onBeforeUnmount } from 'vue'
+import { Window } from '@wailsio/runtime'
+import { useDialog, NIcon } from 'naive-ui'
+import { RemoveOutline, SquareOutline, CopyOutline, CloseOutline } from '@vicons/ionicons5'
+
+// 弹窗确认实例
+const dialog = useDialog()
 
 // 定义应用标题
 const appTitle = 'Rocket Leaf'
@@ -60,18 +66,23 @@ const syncMaximisedState = async () => {
 
 // 窗口控制函数 (Wails v3 runtime)
 const minimizeWindow = () => {
-    const wails = getWails()
-    wails?.Window?.Minimise?.()
+    Window.Minimise()
 }
 
 const maximizeWindow = () => {
-    const wails = getWails()
-    wails?.Window?.ToggleMaximise?.()
+    Window.ToggleMaximise()
 }
 
 const closeWindow = () => {
-    const wails = getWails()
-    wails?.Window?.Close?.()
+    dialog.error({
+        title: '确认关闭',
+        content: '确定要关闭应用吗？',
+        positiveText: '确定',
+        negativeText: '取消',
+        onPositiveClick: () => {
+            Window.Close()
+        }
+    })
 }
 
 onMounted(() => {
@@ -118,24 +129,22 @@ onBeforeUnmount(() => {
         <!-- 窗口控制按钮：Windows/Linux 及 macOS 调试显示 -->
         <div v-if="showWindowControls" class="window-controls" style="--wails-draggable:no-drag">
             <button class="control-btn min-btn" @click="minimizeWindow" title="最小化">
-                <svg width="10" height="1" viewBox="0 0 10 1">
-                    <rect fill="currentColor" width="10" height="1" />
-                </svg>
+                <n-icon size="16">
+                    <RemoveOutline />
+                </n-icon>
             </button>
-            <button class="control-btn max-btn" @click="maximizeWindow" :title="isMaximised ? '还原' : '最大化'">
-                <svg v-if="!isMaximised" width="10" height="10" viewBox="0 0 10 10">
-                    <rect fill="none" stroke="currentColor" stroke-width="1" x="0.5" y="0.5" width="9" height="9" />
-                </svg>
-                <svg v-else width="12" height="10" viewBox="0 0 12 10">
-                    <rect fill="none" stroke="currentColor" stroke-width="1" x="1.5" y="0.5" width="8" height="8" />
-                    <rect fill="none" stroke="currentColor" stroke-width="1" x="3.5" y="2.5" width="8" height="8" />
-                </svg>
+            <button class="control-btn max-btn" @click="maximizeWindow" :title="isMaximised ? '向下还原' : '最大化'">
+                <n-icon size="14" v-if="isMaximised">
+                    <CopyOutline />
+                </n-icon>
+                <n-icon size="14" v-else>
+                    <SquareOutline />
+                </n-icon>
             </button>
             <button class="control-btn close-btn" @click="closeWindow" title="关闭">
-                <svg width="10" height="10" viewBox="0 0 10 10">
-                    <line stroke="currentColor" stroke-width="1.2" x1="0" y1="0" x2="10" y2="10" />
-                    <line stroke="currentColor" stroke-width="1.2" x1="10" y1="0" x2="0" y2="10" />
-                </svg>
+                <n-icon size="16">
+                    <CloseOutline />
+                </n-icon>
             </button>
         </div>
     </div>
