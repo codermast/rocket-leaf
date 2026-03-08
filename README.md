@@ -1,4 +1,4 @@
-# 🍃 Rocket-Leaf
+# Rocket-Leaf
 
 <p align="center">
   <img src="docs/images/logo.png" alt="Rocket-Leaf Logo" width="180">
