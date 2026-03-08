@@ -1,7 +1,7 @@
 # 🍃 Rocket-Leaf
 
 <p align="center">
-  <img src="build/appicon.png" alt="Rocket-Leaf Logo" width="128">
+  <img src="docs/images/logo.png" alt="Rocket-Leaf Logo" width="128">
 </p>
 
 <p align="center">
