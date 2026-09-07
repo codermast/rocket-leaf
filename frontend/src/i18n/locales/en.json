@@ -4,179 +4,15 @@
     "cancel": "Cancel",
     "confirm": "Confirm",
     "delete": "Delete",
-    "refresh": "Refresh",
-    "refreshed": "Refreshed",
-    "search": "Search",
     "edit": "Edit",
     "create": "Create",
-    "import": "Import",
-    "export": "Export",
-    "copy": "Copy",
-    "loading": "Loading…",
-    "all": "All",
-    "recentUsed": "Recently used",
-    "noMatch": "No matches",
-    "moreResults": "{{count}} more — keep typing to narrow",
-    "online": "Online",
-    "offline": "Offline",
-    "warning": "Unknown",
-    "connected": "Connected",
-    "disconnect": "Disconnect",
-    "selectFile": "Choose file",
-    "viewAll": "View all",
-    "newCount": "+{{count}} new",
-    "instances": "{{count}} instances",
-    "queues": "{{count}} queues",
-    "comma": ", ",
     "minimize": "Minimize",
     "maximize": "Maximize",
     "restore": "Restore",
     "close": "Close",
-    "exitApp": "Quit application",
-    "exitAppConfirm": "Quit MQ Studio?",
-    "exit": "Quit",
-    "connectFirst": "Connect to a cluster first",
-    "goToConnections": "Go to Connections",
-    "docs": "Docs",
     "dismiss": "Dismiss notification",
     "yes": "Yes",
     "no": "No"
-  },
-  "nav": {
-    "consumers": "Consumers"
-  },
-  "consumers": {
-    "title": "Consumer groups",
-    "subtitle": "{{count}} groups",
-    "subtitleFiltered": "{{count}} of {{total}} groups",
-    "resultCount": "{{count}} groups",
-    "subtitleNoConn": "Not connected · open Connections first",
-    "searchPlaceholder": "Search group or subscribed topic…",
-    "filterAll": "All",
-    "filterOnline": "Online",
-    "filterWarning": "Warning",
-    "filterOffline": "Offline",
-    "tabs": {
-      "overview": "Overview",
-      "instances": "Instances",
-      "subscriptions": "Subscriptions",
-      "config": "Config"
-    },
-    "table": {
-      "name": "Group name",
-      "topic": "Topic",
-      "model": "Model",
-      "status": "Status",
-      "instances": "Instances",
-      "lag": "Lag"
-    },
-    "empty": "No consumer groups",
-    "loadError": "Failed to load consumer groups: {{message}}",
-    "newGroup": "New consumer group",
-    "stat": {
-      "instances": "Instances",
-      "lag": "Total lag",
-      "tps": "Consume TPS",
-      "retry": "Retry QPS",
-      "dlq": "Dead letters"
-    },
-    "detail": {
-      "subscriptions": "Subscriptions",
-      "subscriptionsEmpty": "No subscriptions",
-      "instances": "Online clients",
-      "instancesEmpty": "No online clients",
-      "config": "Configuration",
-      "configMode": "Consume mode",
-      "configMaxRetry": "Max retries",
-      "configCluster": "Cluster",
-      "configLastUpdate": "Last update",
-      "stats": "Live stats",
-      "statsTps": "Consume TPS",
-      "statsLag": "Total lag",
-      "statsRefresh": "Refresh stats",
-      "actions": {
-        "reset": "Reset offset",
-        "edit": "Edit config",
-        "delete": "Delete"
-      },
-      "deleteConfirm": "Delete group {{name}}? This cannot be undone.",
-      "deleteSuccess": "Consumer group deleted",
-      "modeClustering": "CLUSTERING",
-      "modeBroadcasting": "BROADCASTING"
-    },
-    "reset": {
-      "title": "Reset consumption offset",
-      "topic": "Subscribed topic",
-      "topicHint": "Pick the topic to reset",
-      "time": "Reset to point",
-      "timeNow": "Latest offset",
-      "timeEarliest": "Earliest offset",
-      "timeCustom": "Custom time",
-      "force": "Force reset (even with online consumers)",
-      "submit": "Confirm reset",
-      "success": "Reset request submitted",
-      "error": "Reset failed"
-    },
-    "edit": {
-      "title": "Edit consumer group",
-      "createTitle": "New consumer group",
-      "name": "Group name",
-      "namePlaceholder": "e.g. order-consumer-group",
-      "broker": "Target broker",
-      "brokerHint": "Pick a master broker",
-      "noBrokers": "No brokers available",
-      "mode": "Consume mode",
-      "modeHint": "CLUSTERING (sharded) · BROADCASTING (fanout)",
-      "maxRetry": "Max retry count",
-      "submit": "Save",
-      "createSubmit": "Create",
-      "createSuccess": "Group {{name}} created",
-      "saveSuccess": "Group {{name}} saved"
-    }
-  },
-  "producer": {
-    "subtitle": "Send a single message to a topic for end-to-end testing",
-    "target": "Target",
-    "key": "Key",
-    "delay": "Delay level",
-    "send": "Send"
-  },
-  "cluster": {
-    "title": "Cluster",
-    "subtitle": "{{cluster}} · {{nameservers}} NameServers · {{brokers}} Brokers",
-    "subtitleNoConn": "Not connected · open Connections first",
-    "tabs": {
-      "overview": "Overview",
-      "broker": "Broker",
-      "nameserver": "NameServer"
-    },
-    "stat": {
-      "health": "Cluster health",
-      "healthHealthy": "Healthy",
-      "healthDegraded": "Degraded",
-      "healthOffline": "Offline",
-      "healthSummary": "{{online}} / {{total}} online",
-      "tps": "Total TPS",
-      "tpsSubtitle": "Live in + out",
-      "disk": "Disk usage",
-      "diskSubtitle": "CommitLog average",
-      "topics": "Total topics",
-      "topicsSubtitle": "{{groups}} consumer groups"
-    },
-    "throughput": "Throughput · last 60 min",
-    "brokerEmpty": "No broker data",
-    "brokerTable": {
-      "name": "Broker",
-      "role": "Role",
-      "address": "Address",
-      "version": "Version",
-      "tps": "TPS (in/out)",
-      "disk": "CommitLog disk",
-      "status": "Status"
-    },
-    "nameserverList": "NameServers",
-    "nameserverEmpty": "No NameServer data",
-    "loadError": "Failed to load cluster info: {{message}}"
   },
   "alerts": {
     "title": "Alerts",
@@ -289,77 +125,6 @@
       "thresholdPercent": "Threshold {{value}}%"
     }
   },
-  "acl": {
-    "subtitle": "Access control list"
-  },
-  "connections": {
-    "title": "Connections",
-    "subtitle": "Stored locally · {{count}} connections",
-    "searchPlaceholder": "Search connections…",
-    "newConnection": "New connection",
-    "addFirst": "Add your first connection",
-    "empty": "No connections yet",
-    "emptyHint": "Add a connection to get started",
-    "selectHint": "Pick a connection on the left to see its details",
-    "newTitle": "New connection",
-    "default": "Default",
-    "config": "Connection settings",
-    "name": "Name",
-    "namePlaceholder": "Give this connection a name",
-    "group": "Group",
-    "groupSearchPlaceholder": "Search or create a group…",
-    "groupCreate": "Create \"{{name}}\"",
-    "ungrouped": "Ungrouped",
-    "nameServer": "NameServer",
-    "host": "Host / IP",
-    "port": "Port",
-    "hostPlaceholder": "127.0.0.1 or namesrv.example.com",
-    "hostInvalid": "Enter a valid IP address or hostname",
-    "addNameServer": "Add address",
-    "nameServerHint": "Host and port are separate; default port is 9876. Add more rows for extra NameServers",
-    "validatePort": "Port must be a number between 1 and 65535",
-    "timeout": "Connect timeout",
-    "timeoutUnit": "s",
-    "enableAcl": "Enable ACL",
-    "enableAclHint": "Requires AccessKey / SecretKey",
-    "ak": "AccessKey",
-    "sk": "SecretKey",
-    "remark": "Notes",
-    "remarkPlaceholder": "Optional",
-    "test": "Test connectivity",
-    "testing": "Testing…",
-    "testSuccess": "Connection test successful",
-    "testFail": "Connection test failed",
-    "connect": "Connect",
-    "saveAndConnect": "Save & connect",
-    "saveOnly": "Save only",
-    "disconnect": "Disconnect",
-    "connectSuccess": "Connected to {{name}}",
-    "disconnectSuccess": "Disconnected from {{name}}",
-    "connectHint": "Edit then click Save & connect — no separate steps",
-    "connectHintNew": "Fill in NameServer, then Save & connect",
-    "connectHintOnline": "Connected. Save edits, or disconnect and reconnect",
-    "unsaved": "Unsaved",
-    "advanced": "Advanced",
-    "setDefault": "Set as default",
-    "setDefaultSuccess": "{{name}} is now the default",
-    "create": "Create",
-    "save": "Save",
-    "createSuccess": "Connection {{name}} created",
-    "saveSuccess": "Connection {{name}} saved",
-    "deleteBtn": "Delete connection",
-    "deleteSuccess": "Connection deleted",
-    "deleteConfirm": "Delete connection {{name}}? This cannot be undone and will disconnect the active session.",
-    "validateName": "Please enter a connection name",
-    "validateNameServer": "Please enter a NameServer address",
-    "validateAcl": "AccessKey and SecretKey are required when ACL is enabled",
-    "lastCheck": "Last checked: {{time}}",
-    "endpoints": "Endpoints",
-    "kind": "Broker type",
-    "secretAlreadySet": "Already set, leave blank to keep",
-    "validateRequired": "{{field}} is required",
-    "validateField": "{{field}} is not valid"
-  },
   "mq": {
     "common": {
       "form": {
@@ -368,7 +133,6 @@
       }
     },
     "rocketmq": {
-      "name": "RocketMQ",
       "form": {
         "nameServer": "NameServer",
         "enableAcl": "Enable ACL",
@@ -379,7 +143,6 @@
       }
     },
     "kafka": {
-      "name": "Kafka",
       "form": {
         "bootstrapServers": "Bootstrap servers",
         "mechanism": "Authentication",
@@ -427,23 +190,9 @@
         "amqpUnreachable": "Cannot reach the AMQP port. The admin views still work, but browsing and publishing do not - check the AMQP address and port.",
         "replicationPlugin": "The shovel and federation plugins are not enabled on this broker, so the cross-broker pages have nothing to read. That is a deployment choice rather than a failure - enable them with rabbitmq-plugins enable rabbitmq_shovel rabbitmq_shovel_management.",
         "streamPlugin": "The broker does not have the rabbitmq_stream_management plugin enabled. A stream queue still works over AMQP; only its stream protocol clients are invisible."
-      },
-      "routing": {
-        "title": "Exchanges & bindings",
-        "exchanges": "Exchanges",
-        "bindings": "Bindings",
-        "source": "Source",
-        "destination": "Destination",
-        "destinationKind": "Kind",
-        "routingKey": "Routing key",
-        "exchangeType": "Type",
-        "durable": "Durable",
-        "empty": "No bindings in this virtual host"
-      },
-      "name": "RabbitMQ"
+      }
     },
     "pulsar": {
-      "name": "Pulsar",
       "form": {
         "serviceUrl": "Service URL",
         "adminUrl": "Admin API",
@@ -467,7 +216,6 @@
       }
     },
     "redis-stream": {
-      "name": "Redis Stream",
       "form": {
         "deployment": "Deployment",
         "standalone": "Standalone",
@@ -492,7 +240,6 @@
       }
     },
     "mqtt": {
-      "name": "MQTT",
       "degraded": {
         "sysRefused": "The broker refused a subscription to its $SYS tree. That is a rule rather than a fault — EMQX denies it to any client that is not local — so the figures come from its management API instead where there is one. To read $SYS, allow the subscription in the broker's authorisation.",
         "sysSilent": "The broker took the subscription and publishes no $SYS tree at all. There is nothing to configure: this broker simply does not report on itself, and the pages that would read it stay empty.",
@@ -503,7 +250,6 @@
       }
     },
     "nats": {
-      "name": "NATS",
       "degraded": {
         "jetstreamDisabled": "This server was started without JetStream, so it stores nothing: there are no streams, no consumers and no message history to read. Start the server with --jetstream, or point this connection at one that already runs it.",
         "jetstreamNoAccount": "The server runs JetStream and this account may not use it. Nothing needs to change about how the server was started — add a jetstream block to the account in the server's configuration, or connect as one that already has one.",
@@ -514,7 +260,6 @@
       }
     },
     "activemq": {
-      "name": "ActiveMQ",
       "form": {
         "console": "Web console",
         "mechanism": "Authentication",
@@ -538,7 +283,6 @@
       }
     },
     "nsq": {
-      "name": "NSQ",
       "form": {
         "nsqd": "nsqd addresses",
         "lookupd": "nsqlookupd addresses"
@@ -548,7 +292,6 @@
       }
     },
     "sqs": {
-      "name": "Amazon SQS",
       "form": {
         "region": "AWS region",
         "accessKeyId": "Access key ID",
@@ -562,7 +305,6 @@
       }
     },
     "google-pubsub": {
-      "name": "Google Pub/Sub",
       "form": {
         "projectId": "Google Cloud project",
         "credentialsJson": "Service account key",
@@ -577,7 +319,6 @@
       }
     },
     "azure-servicebus": {
-      "name": "Azure Service Bus",
       "form": {
         "namespace": "Namespace",
         "keyName": "Shared access policy",
@@ -591,7 +332,6 @@
       }
     },
     "kinesis": {
-      "name": "Amazon Kinesis",
       "form": {
         "region": "AWS region",
         "accessKeyId": "Access key ID",
@@ -608,7 +348,6 @@
       }
     },
     "ibmmq": {
-      "name": "IBM MQ",
       "form": {
         "mqweb": "mqweb server",
         "mechanism": "Authentication",
@@ -629,7 +368,6 @@
       }
     },
     "solace": {
-      "name": "Solace PubSub+",
       "form": {
         "semp": "SEMP address",
         "msgVpn": "Message VPN",
@@ -1527,12 +1265,10 @@
       "refresh": "Refresh",
       "actions": "Actions",
       "lastHour": "Last hour",
-      "viewAll": "View all",
       "status": "Status",
       "consumerGroup": "Consumer group",
       "backlog": "Backlog",
       "partition": "Partition",
-      "subscription": "Subscription",
       "queue": "Queue",
       "time": "Time",
       "healthy": "Healthy",
@@ -1543,14 +1279,10 @@
       "delete": "Delete",
       "bindings": "Bindings",
       "members": "Members",
-      "viewMessages": "View messages",
       "value": "Value",
-      "properties": "Properties",
       "config": "Config",
       "type": "Type",
-      "pending": "Backlog",
       "message": "Message",
-      "chartPlaceholder": "Line chart placeholder",
       "consumers": "Consumers",
       "node": "Node",
       "client": "Client",
@@ -1559,17 +1291,13 @@
       "group": "Group",
       "mode": "Mode",
       "cluster": "Cluster",
-      "unacked": "Unacked",
       "sendMessage": "Send message",
       "messageQuery": "Message query",
       "connections": "Connections",
       "cancel": "Cancel",
-      "size": "Size",
       "topic": "Topic",
-      "deadLetter": "Dead letter",
       "memory": "Memory",
       "target": "Target",
-      "params": "Parameters",
       "exchange": "Exchange",
       "features": "Features",
       "online": "Online",
@@ -1577,24 +1305,16 @@
       "messageDetail": "Message detail",
       "purge": "Purge",
       "offset": "Offset",
-      "policy": "Policy",
-      "field": "Field",
       "timestamp": "Timestamp",
       "in": "In",
       "out": "Out",
-      "inRate": "In rate",
-      "outRate": "Out rate",
       "consumeTps": "Consume TPS",
       "produceTps": "Produce TPS",
       "backlogAlert": "Backlog alert",
-      "sortByBacklog": "Sort by backlog",
-      "sortByPending": "Sort by backlog",
       "searchGroups": "Search consumer groups…",
-      "consumeRate": "Consume rate",
       "throughput": "Throughput",
       "topBacklogGroups": "Top groups by backlog",
       "totalBacklog": "Total backlog",
-      "namespace": "Namespace",
       "persistence": "Persistence",
       "user": "User",
       "resetOffset": "Reset offset",
@@ -1604,22 +1324,16 @@
       "newTopic": "+ New topic",
       "trace": "Trace",
       "redeliver": "Redeliver",
-      "ackRemove": "Ack (remove)",
       "dlqRetry": "Dead letter / retry",
       "searchTopic": "Search topic names…",
       "latestN": "Latest N",
-      "consumeState": "Consume state",
       "messageRate": "Message rate",
-      "summary": "Summary",
       "reason": "Reason",
-      "throughputShort": "Throughput",
       "retry": "Retry",
       "format": "Format",
-      "pause": "Pause",
       "protocol": "Protocol",
       "address": "Address",
       "role": "Role",
-      "page": "Page",
       "selectedN": "{{n}} selected",
       "noMatch": "Nothing matches the filter",
       "copied": "Copied",
@@ -1657,21 +1371,13 @@
         "broker": "Broker"
       },
       "mqtt": {
-        "subtitle": "iot-broker · EMQX 5.4 · MQTT 5.0 · read from $SYS (read-only)",
         "onlineClients": "Online clients",
         "peakClients": "peak {{count}}",
         "subscriptions": "Subscriptions",
         "shared": "{{count}} shared",
         "retained": "Retained",
-        "inbound": "Inbound",
-        "outbound": "Outbound 1 020/s",
         "dropped": "Dropped",
-        "expired": "Expired 0",
-        "clientTrend": "Client count",
-        "clientChart": "Line chart placeholder ($SYS clients.count)",
-        "rateChart": "Line chart placeholder (received / sent)",
         "sysMetrics": "$SYS key metrics",
-        "fullTree": "Full $SYS tree",
         "retainedHint": "the broker's own total, which counts its $SYS tree",
         "messagesIn": "Messages received",
         "messagesOut": "{{count}} sent",
@@ -1687,18 +1393,6 @@
         "sysAbsent": "this broker publishes no $SYS tree"
       },
       "pulsar": {
-        "subtitle": "pulsar-eu · Pulsar 3.2 · tenant ecommerce · Broker 3 / Bookie 4",
-        "allOnline": "All online",
-        "tenants": "6 tenants",
-        "partitioned": "38 partitioned",
-        "outRate": "Out 2.1k/s",
-        "totalPending": "Total backlog",
-        "vsLastHour": "+6% vs 1h ago",
-        "ledgerBalanced": "Ledgers balanced · no read-only bookie",
-        "topPending": "Top subscriptions by backlog",
-        "bookieStorage": "Bookie storage",
-        "pending": "No Pulsar data yet",
-        "pendingHint": "This page is wired to the driver as each capability lands. Nothing here is invented in the meantime.",
         "leaderIs": "Leader: {{address}}",
         "noLeader": "No leader reported",
         "bundles": "Bundles",
@@ -1822,17 +1516,7 @@
         "txnEmpty": "No transactional producer is registered with this cluster."
       },
       "pulsar": {
-        "load44": "Load 44%",
-        "load41": "Load 41%",
-        "writeLatency": "Write latency",
-        "readLatency": "Read latency",
-        "store58": "Storage 58%",
-        "store61": "Storage 61%",
-        "store57": "Storage 57%",
-        "store73": "Storage 73%",
         "bundles": "Bundles",
-        "rebalance": "Trigger rebalance",
-        "distribution": "Distribution",
         "title": "Brokers",
         "leader": "leader",
         "producers": "Producers",
@@ -2580,24 +2264,8 @@
         }
       },
       "pulsar": {
-        "subtitle": "Tenant ecommerce · namespace orders · 18 topics",
-        "tenant": "Tenant: ecommerce",
         "namespace": "Namespace",
-        "searchTopic": "Search topics…",
-        "persistentOnly": "persistent only",
         "producers": "Producers",
-        "eightParts": "8 partitions",
-        "inOut": "In / out",
-        "storageSize": "Storage size",
-        "policies": "Policies (inherited from the namespace · overridable)",
-        "ttl": "Message TTL",
-        "sevenDays": "7 days",
-        "retention": "Retention",
-        "retentionValue": "50GB / 30 days",
-        "backlogQuota": "Backlog quota",
-        "quotaValue": "10GB · producer_exception when exceeded",
-        "schema": "JSON · BACKWARD compatible",
-        "unload": "Unload",
         "title": "Topics",
         "new": "New topic",
         "newTitle": "New topic",
@@ -2820,20 +2488,12 @@
         "stats": "Stats",
         "offlinePersistent": "Offline (persistent session)",
         "title": "Clients / sessions",
-        "subtitle": "1 284 online · 96 persistent sessions offline",
         "search": "Search client ID / IP…",
-        "byConnectTime": "By connect time",
         "inflightQueued": "Inflight/queued",
-        "online6d": "Online 6d",
-        "offline1h": "Offline · session kept 1h",
         "subsCount": "Subscriptions",
         "keepAlive": "Keep alive",
         "cleanStart": "Clean start",
-        "inflightWindow": "Inflight window",
         "rxTx": "Rx / tx",
-        "will": "Will: iot/device/status/A19F = offline · QoS1 · retain",
-        "liveMessages": "View live messages",
-        "clearSession": "Clear session",
         "kick": "Disconnect",
         "count": "{{total}} sessions · {{orphaned}} with nobody connected",
         "user": "User",
@@ -3200,16 +2860,7 @@
         "tombstone": "A key and no value: this is a tombstone, which tells a compacted topic to forget that key.",
         "noHeaders": "This record carries no headers."
       },
-      "deserialize": "Deserialised as JSON",
       "pulsar": {
-        "peek": "Peek latest",
-        "byMsgId": "By message ID",
-        "byPublishTime": "By publish time",
-        "subscription": "Subscription: settle-sub",
-        "publishTime": "Publish time",
-        "publishEventTime": "Publish / event time",
-        "seekHere": "Seek to this message…",
-        "peekNote": "Peek does not move the subscription cursor · markDeletePosition 812:2:0",
         "title": "Messages",
         "search": "Search",
         "tail": "Tail",
@@ -3435,16 +3086,9 @@
           "lost": "{{count}} entries were owed but no longer in the stream. They were dropped from the pending list rather than moved: that work is gone."
         }
       },
-      "last24h": "Last 24 hours",
       "pulsar": {
         "title": "Dead letters",
-        "subtitle": "Subscription settle-sub · order-created-settle-sub-DLQ · 8 messages",
         "subscription": "From subscription",
-        "rule": "maxRedeliverCount=5 · past that it goes to the DLQ",
-        "lastException": "Last exception (properties)",
-        "hint": "Discarding acks it on the DLQ · the source subscription is untouched",
-        "resend": "Resend to the source topic",
-        "discard": "Discard",
         "topic": "Topic",
         "kind": "Kind",
         "source": "From topic",
@@ -3494,12 +3138,6 @@
     "producer": {
       "delayLevel": "Delay level",
       "noDelay": "No delay",
-      "targetPartition": "Target partition",
-      "autoKeyHash": "Automatic (key hash)",
-      "compression": "Compression",
-      "keySerde": "Key serialiser",
-      "valueSerde": "Value serialiser",
-      "noteHeaders": "Headers go in the shared custom-properties block · with no key the partitioner decides",
       "ttl": "Expiry TTL",
       "noteConfirm": "Confirm mode returns ack/nack · mandatory returns anything it cannot route",
       "routingMode": "Routing mode",
@@ -3756,19 +3394,8 @@
       "noHistory": "MQTT stores no history. {{count}} messages have arrived since this subscription started, and closing the page loses them."
     },
     "term": {
-      "topic": "topic",
-      "direct": "direct",
-      "fanout": "fanout",
-      "headers": "Headers",
-      "rejected": "rejected",
-      "expired": "expired",
-      "maxlen": "maxlen",
       "json": "JSON",
-      "roundrobin": "RoundRobin",
-      "payload": "Payload",
-      "properties": "Properties",
-      "consumer": "Consumer",
-      "headersType": "headers"
+      "roundrobin": "RoundRobin"
     },
     "state": {
       "offline": "Not connected",

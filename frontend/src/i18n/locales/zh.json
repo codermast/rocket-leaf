@@ -4,179 +4,15 @@
     "cancel": "取消",
     "confirm": "确认",
     "delete": "删除",
-    "refresh": "刷新",
-    "refreshed": "已刷新",
-    "search": "搜索",
     "edit": "编辑",
     "create": "新建",
-    "import": "导入",
-    "export": "导出",
-    "copy": "复制",
-    "loading": "加载中…",
-    "all": "全部",
-    "recentUsed": "最近使用",
-    "noMatch": "无匹配结果",
-    "moreResults": "还有 {{count}} 项，继续输入以缩小范围",
-    "online": "在线",
-    "offline": "离线",
-    "warning": "状态未知",
-    "connected": "已连接",
-    "disconnect": "断开",
-    "selectFile": "选择文件",
-    "viewAll": "查看全部",
-    "newCount": "新增 {{count}}",
-    "instances": "{{count}} 实例",
-    "queues": "{{count}} 队列",
-    "comma": "、",
     "minimize": "最小化",
     "maximize": "最大化",
     "restore": "还原",
     "close": "关闭",
-    "exitApp": "退出应用",
-    "exitAppConfirm": "确定要关闭 MQ Studio 吗？",
-    "exit": "退出",
-    "connectFirst": "请先连接集群",
-    "goToConnections": "前往连接管理",
-    "docs": "文档",
     "dismiss": "关闭通知",
     "yes": "是",
     "no": "否"
-  },
-  "nav": {
-    "consumers": "消费者组"
-  },
-  "consumers": {
-    "title": "消费者组",
-    "subtitle": "{{count}} 个 Group",
-    "subtitleFiltered": "{{count}} 个 Group（共 {{total}} 个）",
-    "resultCount": "{{count}} 个消费组",
-    "subtitleNoConn": "未连接 · 请先在「连接」页面建立连接",
-    "searchPlaceholder": "搜索 Group、订阅 Topic…",
-    "filterAll": "全部",
-    "filterOnline": "在线",
-    "filterWarning": "异常",
-    "filterOffline": "离线",
-    "tabs": {
-      "overview": "概览",
-      "instances": "实例",
-      "subscriptions": "订阅",
-      "config": "配置"
-    },
-    "table": {
-      "name": "Group 名称",
-      "topic": "订阅主题",
-      "model": "模式",
-      "status": "状态",
-      "instances": "实例",
-      "lag": "堆积"
-    },
-    "empty": "暂无消费者组",
-    "loadError": "加载消费者组失败：{{message}}",
-    "newGroup": "新建消费者组",
-    "stat": {
-      "instances": "实例",
-      "lag": "总堆积",
-      "tps": "消费 TPS",
-      "retry": "重试 QPS",
-      "dlq": "死信"
-    },
-    "detail": {
-      "subscriptions": "订阅 Topic",
-      "subscriptionsEmpty": "暂无订阅关系",
-      "instances": "在线客户端",
-      "instancesEmpty": "暂无在线客户端",
-      "config": "配置",
-      "configMode": "消费模式",
-      "configMaxRetry": "最大重试次数",
-      "configCluster": "所属集群",
-      "configLastUpdate": "最后更新",
-      "stats": "实时统计",
-      "statsTps": "消费 TPS",
-      "statsLag": "堆积总数",
-      "statsRefresh": "刷新统计",
-      "actions": {
-        "reset": "重置进度",
-        "edit": "修改配置",
-        "delete": "删除"
-      },
-      "deleteConfirm": "删除消费者组 {{name}}？此操作不可撤销。",
-      "deleteSuccess": "已删除消费者组",
-      "modeClustering": "CLUSTERING",
-      "modeBroadcasting": "BROADCASTING"
-    },
-    "reset": {
-      "title": "重置消费进度",
-      "topic": "订阅 Topic",
-      "topicHint": "选择要重置的 Topic",
-      "time": "重置到时间点",
-      "timeNow": "重置到最新位点",
-      "timeEarliest": "重置到最早位点",
-      "timeCustom": "自定义时间",
-      "force": "强制重置（即使有在线消费者）",
-      "submit": "确认重置",
-      "success": "已提交重置请求",
-      "error": "重置失败"
-    },
-    "edit": {
-      "title": "修改消费者组",
-      "createTitle": "新建消费者组",
-      "name": "Group 名称",
-      "namePlaceholder": "例：order-consumer-group",
-      "broker": "目标 Broker",
-      "brokerHint": "选择一个 master Broker",
-      "noBrokers": "未发现可用的 Broker",
-      "mode": "消费模式",
-      "modeHint": "CLUSTERING（队列分摊） · BROADCASTING（广播）",
-      "maxRetry": "最大重试次数",
-      "submit": "保存",
-      "createSubmit": "创建",
-      "createSuccess": "已创建 Group {{name}}",
-      "saveSuccess": "已保存 Group {{name}}"
-    }
-  },
-  "producer": {
-    "subtitle": "向 Topic 发送一条消息用于联调与诊断",
-    "target": "目标",
-    "key": "Key",
-    "delay": "延迟级别",
-    "send": "发送"
-  },
-  "cluster": {
-    "title": "集群",
-    "subtitle": "{{cluster}} · {{nameservers}} 个 NameServer · {{brokers}} 台 Broker",
-    "subtitleNoConn": "未连接 · 请先在「连接」页面建立连接",
-    "tabs": {
-      "overview": "概览",
-      "broker": "Broker",
-      "nameserver": "NameServer"
-    },
-    "stat": {
-      "health": "集群健康",
-      "healthHealthy": "正常",
-      "healthDegraded": "降级",
-      "healthOffline": "离线",
-      "healthSummary": "在线 {{online}} / {{total}}",
-      "tps": "总 TPS",
-      "tpsSubtitle": "实时入流 + 出流",
-      "disk": "磁盘使用",
-      "diskSubtitle": "CommitLog 平均",
-      "topics": "Topic 总数",
-      "topicsSubtitle": "{{groups}} 个消费组"
-    },
-    "throughput": "吞吐趋势 · 最近 60 分钟",
-    "brokerEmpty": "暂无 Broker 数据",
-    "brokerTable": {
-      "name": "Broker",
-      "role": "角色",
-      "address": "地址",
-      "version": "版本",
-      "tps": "TPS (生产/消费)",
-      "disk": "CommitLog 磁盘",
-      "status": "状态"
-    },
-    "nameserverList": "NameServer 列表",
-    "nameserverEmpty": "暂无 NameServer 信息",
-    "loadError": "加载集群信息失败：{{message}}"
   },
   "alerts": {
     "title": "告警",
@@ -289,77 +125,6 @@
       "thresholdPercent": "阈值 {{value}}%"
     }
   },
-  "acl": {
-    "subtitle": "访问控制列表"
-  },
-  "connections": {
-    "title": "连接",
-    "subtitle": "本地保存 · {{count}} 个连接配置",
-    "searchPlaceholder": "搜索连接…",
-    "newConnection": "新建连接",
-    "addFirst": "添加第一个连接",
-    "empty": "暂无连接",
-    "emptyHint": "添加连接以开始使用",
-    "selectHint": "在左侧选择连接以查看详情",
-    "newTitle": "新建连接",
-    "default": "默认",
-    "config": "连接配置",
-    "name": "名称",
-    "namePlaceholder": "为连接起一个名称",
-    "group": "分组",
-    "groupSearchPlaceholder": "搜索或新建分组…",
-    "groupCreate": "新建「{{name}}」",
-    "ungrouped": "未分组",
-    "nameServer": "NameServer",
-    "host": "主机 / IP",
-    "port": "端口",
-    "hostPlaceholder": "127.0.0.1 或 namesrv.example.com",
-    "hostInvalid": "请输入合法的 IP 地址或主机名",
-    "addNameServer": "添加地址",
-    "nameServerHint": "主机与端口分开填写，默认端口 9876；可添加多个 NameServer",
-    "validatePort": "端口须为 1–65535 的数字",
-    "timeout": "连接超时",
-    "timeoutUnit": "秒",
-    "enableAcl": "启用 ACL 认证",
-    "enableAclHint": "需要 AccessKey / SecretKey 鉴权",
-    "ak": "AccessKey",
-    "sk": "SecretKey",
-    "remark": "备注",
-    "remarkPlaceholder": "可选",
-    "test": "测试连通性",
-    "testing": "测试中…",
-    "testSuccess": "连接测试成功",
-    "testFail": "连接测试失败",
-    "connect": "连接",
-    "saveAndConnect": "保存并连接",
-    "saveOnly": "仅保存",
-    "disconnect": "断开",
-    "connectSuccess": "已连接 {{name}}",
-    "disconnectSuccess": "已断开 {{name}}",
-    "connectHint": "修改后点「保存并连接」即可，无需分步操作",
-    "connectHintNew": "填好 NameServer 后点「保存并连接」",
-    "connectHintOnline": "当前已连接。修改配置后可先保存，或断开后重新连接",
-    "unsaved": "未保存",
-    "advanced": "高级选项",
-    "setDefault": "设为默认",
-    "setDefaultSuccess": "已将 {{name}} 设为默认",
-    "create": "创建连接",
-    "save": "保存",
-    "createSuccess": "已创建连接 {{name}}",
-    "saveSuccess": "已保存连接 {{name}}",
-    "deleteBtn": "删除连接",
-    "deleteSuccess": "已删除连接",
-    "deleteConfirm": "删除连接 {{name}}？此操作不可撤销，且会断开当前连接。",
-    "validateName": "请填写连接名称",
-    "validateNameServer": "请填写 NameServer 地址",
-    "validateAcl": "启用 ACL 时，AccessKey 与 SecretKey 不能为空",
-    "lastCheck": "最近检测：{{time}}",
-    "endpoints": "接入地址",
-    "kind": "消息队列类型",
-    "secretAlreadySet": "已设置，留空保持不变",
-    "validateRequired": "请填写{{field}}",
-    "validateField": "{{field}} 格式不正确"
-  },
   "mq": {
     "common": {
       "form": {
@@ -368,7 +133,6 @@
       }
     },
     "rocketmq": {
-      "name": "RocketMQ",
       "form": {
         "nameServer": "NameServer",
         "enableAcl": "启用 ACL",
@@ -379,7 +143,6 @@
       }
     },
     "kafka": {
-      "name": "Kafka",
       "form": {
         "bootstrapServers": "Bootstrap 地址",
         "mechanism": "认证方式",
@@ -427,23 +190,9 @@
         "amqpUnreachable": "无法连接到 AMQP 端口。管理功能仍可用，但收发消息不可用 —— 请检查 AMQP 地址与端口。",
         "replicationPlugin": "该 broker 没有启用 shovel / federation 插件，跨 broker 搬运的相关页面因此不可用。这是部署选择，不是故障 —— 需要时用 rabbitmq-plugins enable rabbitmq_shovel rabbitmq_shovel_management 打开。",
         "streamPlugin": "Broker 没有启用 rabbitmq_stream_management 插件。流队列仍可通过 AMQP 读写，只是看不到流协议这一侧的客户端。"
-      },
-      "routing": {
-        "title": "交换机与绑定",
-        "exchanges": "交换机",
-        "bindings": "绑定",
-        "source": "源交换机",
-        "destination": "目标",
-        "destinationKind": "目标类型",
-        "routingKey": "路由键",
-        "exchangeType": "类型",
-        "durable": "持久化",
-        "empty": "此虚拟主机下没有绑定"
-      },
-      "name": "RabbitMQ"
+      }
     },
     "pulsar": {
-      "name": "Pulsar",
       "form": {
         "serviceUrl": "服务地址",
         "adminUrl": "管理 API",
@@ -467,7 +216,6 @@
       }
     },
     "redis-stream": {
-      "name": "Redis Stream",
       "form": {
         "deployment": "部署方式",
         "standalone": "单机",
@@ -492,7 +240,6 @@
       }
     },
     "mqtt": {
-      "name": "MQTT",
       "degraded": {
         "sysRefused": "broker 拒绝了对它 $SYS 树的订阅。这是规则而不是故障——EMQX 默认就拒绝所有非本机客户端——所以有管理 API 时这些数字改从那里读。想读 $SYS，需要在 broker 的授权配置里放行这个订阅。",
         "sysSilent": "broker 接受了订阅，但根本不发布 $SYS 树。这没有什么可配置的：这个 broker 就是不上报自己的状态，依赖它的页面会保持空白。",
@@ -503,7 +250,6 @@
       }
     },
     "nats": {
-      "name": "NATS",
       "degraded": {
         "jetstreamDisabled": "这台服务器启动时没有开启 JetStream，不会存储任何消息：没有流、没有消费者，也没有可供查看的历史。给服务器加上 --jetstream 重启，或把这个连接指向已经开启的集群。",
         "jetstreamNoAccount": "服务器开了 JetStream，但当前账户无权使用。不用改服务器的启动方式——在配置里给这个账户加一行 jetstream，或改用已经有授权的账户连接。",
@@ -514,7 +260,6 @@
       }
     },
     "activemq": {
-      "name": "ActiveMQ",
       "form": {
         "console": "Web 控制台",
         "mechanism": "认证方式",
@@ -538,7 +283,6 @@
       }
     },
     "nsq": {
-      "name": "NSQ",
       "form": {
         "nsqd": "nsqd 地址",
         "lookupd": "nsqlookupd 地址"
@@ -548,7 +292,6 @@
       }
     },
     "sqs": {
-      "name": "Amazon SQS",
       "form": {
         "region": "AWS 区域",
         "accessKeyId": "Access Key ID",
@@ -562,7 +305,6 @@
       }
     },
     "google-pubsub": {
-      "name": "Google Pub/Sub",
       "form": {
         "projectId": "Google Cloud 项目",
         "credentialsJson": "服务账号密钥",
@@ -577,7 +319,6 @@
       }
     },
     "azure-servicebus": {
-      "name": "Azure Service Bus",
       "form": {
         "namespace": "命名空间",
         "keyName": "共享访问策略",
@@ -591,7 +332,6 @@
       }
     },
     "kinesis": {
-      "name": "Amazon Kinesis",
       "form": {
         "region": "AWS 区域",
         "accessKeyId": "Access key ID",
@@ -608,7 +348,6 @@
       }
     },
     "ibmmq": {
-      "name": "IBM MQ",
       "form": {
         "mqweb": "mqweb 服务器",
         "mechanism": "认证方式",
@@ -629,7 +368,6 @@
       }
     },
     "solace": {
-      "name": "Solace PubSub+",
       "form": {
         "semp": "SEMP 地址",
         "msgVpn": "Message VPN",
@@ -1527,12 +1265,10 @@
       "refresh": "刷新",
       "actions": "操作",
       "lastHour": "近 1 小时",
-      "viewAll": "查看全部",
       "status": "状态",
       "consumerGroup": "消费者组",
       "backlog": "堆积",
       "partition": "分区",
-      "subscription": "订阅",
       "queue": "队列",
       "time": "时间",
       "healthy": "正常",
@@ -1543,14 +1279,10 @@
       "delete": "删除",
       "bindings": "绑定",
       "members": "成员",
-      "viewMessages": "查看消息",
       "value": "值",
-      "properties": "属性",
       "config": "配置",
       "type": "类型",
-      "pending": "积压",
       "message": "消息",
-      "chartPlaceholder": "折线图占位",
       "consumers": "消费者",
       "node": "节点",
       "client": "客户端",
@@ -1559,17 +1291,13 @@
       "group": "组",
       "mode": "模式",
       "cluster": "集群",
-      "unacked": "未确认",
       "sendMessage": "发送消息",
       "messageQuery": "消息查询",
       "connections": "连接",
       "cancel": "取消",
-      "size": "大小",
       "topic": "主题",
-      "deadLetter": "死信",
       "memory": "内存",
       "target": "目标",
-      "params": "参数",
       "exchange": "交换机",
       "features": "特性",
       "online": "在线",
@@ -1577,24 +1305,16 @@
       "messageDetail": "消息详情",
       "purge": "清空",
       "offset": "位点",
-      "policy": "策略",
-      "field": "字段",
       "timestamp": "时间戳",
       "in": "入",
       "out": "出",
-      "inRate": "入速率",
-      "outRate": "出速率",
       "consumeTps": "消费 TPS",
       "produceTps": "生产 TPS",
       "backlogAlert": "堆积告警",
-      "sortByBacklog": "按堆积排序",
-      "sortByPending": "按积压排序",
       "searchGroups": "搜索消费者组…",
-      "consumeRate": "消费速率",
       "throughput": "吞吐趋势",
       "topBacklogGroups": "堆积 TOP 消费者组",
       "totalBacklog": "总堆积",
-      "namespace": "命名空间",
       "persistence": "持久化",
       "user": "用户",
       "resetOffset": "重置位点",
@@ -1604,22 +1324,16 @@
       "newTopic": "+ 新建 Topic",
       "trace": "消费轨迹",
       "redeliver": "重投递",
-      "ackRemove": "ack 移除",
       "dlqRetry": "死信 / 重试",
       "searchTopic": "搜索 Topic 名称…",
       "latestN": "最新 N 条",
-      "consumeState": "消费状态",
       "messageRate": "消息速率",
-      "summary": "摘要",
       "reason": "原因",
-      "throughputShort": "吞吐",
       "retry": "重试",
       "format": "格式化",
-      "pause": "暂停",
       "protocol": "协议",
       "address": "地址",
       "role": "角色",
-      "page": "页面",
       "selectedN": "已选 {{n}} 条",
       "noMatch": "没有匹配的结果",
       "copied": "已复制",
@@ -1657,21 +1371,13 @@
         "broker": "Broker"
       },
       "mqtt": {
-        "subtitle": "iot-broker · EMQX 5.4 · MQTT 5.0 · 数据来自 $SYS（只读）",
         "onlineClients": "在线客户端",
         "peakClients": "峰值 {{count}}",
         "subscriptions": "订阅总数",
         "shared": "共享订阅 {{count}}",
         "retained": "保留消息",
-        "inbound": "入站",
-        "outbound": "出站 1 020/s",
         "dropped": "丢弃消息",
-        "expired": "过期 0",
-        "clientTrend": "连接数趋势",
-        "clientChart": "折线图占位（$SYS clients.count）",
-        "rateChart": "折线图占位（received / sent）",
         "sysMetrics": "$SYS 关键指标",
-        "fullTree": "完整 $SYS 树",
         "retainedHint": "broker 自己的总数，含它的 $SYS 树",
         "messagesIn": "收到消息",
         "messagesOut": "发出 {{count}}",
@@ -1687,18 +1393,6 @@
         "sysAbsent": "该 broker 不发布 $SYS 树"
       },
       "pulsar": {
-        "subtitle": "pulsar-eu · Pulsar 3.2 · 租户 ecommerce · Broker 3 / Bookie 4",
-        "allOnline": "全部在线",
-        "tenants": "租户 6",
-        "partitioned": "分区 Topic 38",
-        "outRate": "出 2.1k/s",
-        "totalPending": "总积压",
-        "vsLastHour": "较 1h 前 +6%",
-        "ledgerBalanced": "Ledger 均衡 · 无只读 Bookie",
-        "topPending": "积压 TOP 订阅",
-        "bookieStorage": "Bookie 存储",
-        "pending": "Pulsar 数据尚未接入",
-        "pendingHint": "这个页面会随着各项能力逐步接上驱动。在那之前，这里不会显示任何编造的数字。",
         "leaderIs": "Leader：{{address}}",
         "noLeader": "未报告 Leader",
         "bundles": "Bundle",
@@ -1822,17 +1516,7 @@
         "txnEmpty": "该集群没有注册任何事务生产者。"
       },
       "pulsar": {
-        "load44": "负载 44%",
-        "load41": "负载 41%",
-        "writeLatency": "写延迟",
-        "readLatency": "读延迟",
-        "store58": "存储 58%",
-        "store61": "存储 61%",
-        "store57": "存储 57%",
-        "store73": "存储 73%",
         "bundles": "Bundle",
-        "rebalance": "触发负载均衡",
-        "distribution": "分布",
         "title": "Broker",
         "leader": "leader",
         "producers": "生产者",
@@ -2580,24 +2264,8 @@
         }
       },
       "pulsar": {
-        "subtitle": "租户 ecommerce · 命名空间 orders · 18 个 Topic",
-        "tenant": "租户：ecommerce",
         "namespace": "命名空间",
-        "searchTopic": "搜索 Topic…",
-        "persistentOnly": "仅 persistent",
         "producers": "生产者",
-        "eightParts": "8 分区",
-        "inOut": "入 / 出",
-        "storageSize": "存储大小",
-        "policies": "策略（命名空间继承 · 可覆盖）",
-        "ttl": "消息 TTL",
-        "sevenDays": "7 天",
-        "retention": "保留",
-        "retentionValue": "大小 50GB / 时间 30 天",
-        "backlogQuota": "积压配额",
-        "quotaValue": "10GB · 超限 producer_exception",
-        "schema": "JSON · 兼容 BACKWARD",
-        "unload": "卸载 unload",
         "title": "主题",
         "new": "新建主题",
         "newTitle": "新建主题",
@@ -2820,20 +2488,12 @@
         "stats": "统计",
         "offlinePersistent": "离线（持久会话）",
         "title": "客户端 / 会话",
-        "subtitle": "在线 1 284 · 持久会话离线 96",
         "search": "搜索 Client ID / IP…",
-        "byConnectTime": "按连接时间",
         "inflightQueued": "飞行/队列",
-        "online6d": "在线 6d",
-        "offline1h": "离线 · 会话保留 1h",
         "subsCount": "订阅",
         "keepAlive": "心跳间隔",
         "cleanStart": "清理会话",
-        "inflightWindow": "飞行窗口",
         "rxTx": "收 / 发",
-        "will": "遗嘱：iot/device/status/A19F = offline · QoS1 · retain",
-        "liveMessages": "查看实时消息",
-        "clearSession": "清除会话",
         "kick": "踢下线",
         "count": "{{total}} 个会话 · {{orphaned}} 个无人连接",
         "user": "用户",
@@ -3200,16 +2860,7 @@
         "tombstone": "有 key 没有 value：这是一条墓碑消息，用来让压缩型 topic 忘掉这个 key。",
         "noHeaders": "这条消息没有 header。"
       },
-      "deserialize": "反序列化：JSON",
       "pulsar": {
-        "peek": "Peek 最新",
-        "byMsgId": "按 MessageId",
-        "byPublishTime": "按发布时间",
-        "subscription": "订阅：settle-sub",
-        "publishTime": "发布时间",
-        "publishEventTime": "发布 / 事件时间",
-        "seekHere": "Seek 到此消息…",
-        "peekNote": "peek 不影响订阅游标 · markDeletePosition 812:2:0",
         "title": "消息",
         "search": "查询",
         "tail": "实时跟踪",
@@ -3435,16 +3086,9 @@
           "lost": "有 {{count}} 条消息仍被记为待处理，但已不在 Stream 中。它们被从待处理列表里丢弃而不是转移——这部分工作已经丢了。"
         }
       },
-      "last24h": "近 24 小时",
       "pulsar": {
         "title": "死信",
-        "subtitle": "订阅 settle-sub · order-created-settle-sub-DLQ · 8 条",
         "subscription": "来源订阅",
-        "rule": "maxRedeliverCount=5 · 超限入 DLQ",
-        "lastException": "最后异常（properties）",
-        "hint": "丢弃 = 在 DLQ 上 ack · 源订阅不受影响",
-        "resend": "重发到源 Topic",
-        "discard": "确认丢弃",
         "topic": "主题",
         "kind": "类型",
         "source": "来源主题",
@@ -3494,12 +3138,6 @@
     "producer": {
       "delayLevel": "延迟等级",
       "noDelay": "不延迟",
-      "targetPartition": "目标分区",
-      "autoKeyHash": "自动（key hash）",
-      "compression": "压缩",
-      "keySerde": "Key 序列化",
-      "valueSerde": "Value 序列化",
-      "noteHeaders": "headers 走通用「自定义属性」区 · key 为空时按分区器路由",
       "ttl": "过期 TTL",
       "noteConfirm": "confirm 模式返回 ack/nack · mandatory 无法路由时退回",
       "routingMode": "路由模式",
@@ -3756,19 +3394,8 @@
       "noHistory": "MQTT 不保存历史。本次订阅开始至今收到 {{count}} 条，关闭页面即丢失。"
     },
     "term": {
-      "topic": "topic",
-      "direct": "direct",
-      "fanout": "fanout",
-      "headers": "Headers",
-      "rejected": "rejected",
-      "expired": "expired",
-      "maxlen": "maxlen",
       "json": "JSON",
-      "roundrobin": "RoundRobin",
-      "payload": "Payload",
-      "properties": "Properties",
-      "consumer": "Consumer",
-      "headersType": "headers"
+      "roundrobin": "RoundRobin"
     },
     "state": {
       "offline": "未连接",
