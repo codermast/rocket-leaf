@@ -15,11 +15,6 @@ type SolaceService struct {
 	service *solaceservice.Service
 }
 
-// NewSolaceService wires the bridge to the service.
-func NewSolaceService(service *solaceservice.Service) *SolaceService {
-	return &SolaceService{service: service}
-}
-
 // MsgVPN is which Message VPN this connection reads.
 func (s *SolaceService) MsgVPN(connID int) (string, error) {
 	return s.service.MsgVPN(connID)

@@ -15,11 +15,6 @@ type AzureServiceBusService struct {
 	service *servicebusservice.Service
 }
 
-// NewAzureServiceBusService wires the bridge to the service.
-func NewAzureServiceBusService(service *servicebusservice.Service) *AzureServiceBusService {
-	return &AzureServiceBusService{service: service}
-}
-
 // AzureServiceBusEntityInput is a queue or a topic as its form collects it.
 //
 // Deliberately not TopicService.Create's shape. That one takes a broker

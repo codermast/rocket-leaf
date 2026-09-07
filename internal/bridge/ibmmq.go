@@ -15,11 +15,6 @@ type IBMMQService struct {
 	service *ibmmqservice.Service
 }
 
-// NewIBMMQService wires the bridge to the service.
-func NewIBMMQService(service *ibmmqservice.Service) *IBMMQService {
-	return &IBMMQService{service: service}
-}
-
 // QueueManager is which queue manager this connection speaks to.
 func (s *IBMMQService) QueueManager(connID int) (string, error) {
 	return s.service.QueueManager(connID)

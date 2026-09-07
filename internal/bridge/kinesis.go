@@ -15,11 +15,6 @@ type KinesisService struct {
 	service *kinesisservice.Service
 }
 
-// NewKinesisService wires the bridge to the service.
-func NewKinesisService(service *kinesisservice.Service) *KinesisService {
-	return &KinesisService{service: service}
-}
-
 // KinesisStreamInput is a stream as the stream form collects it.
 //
 // Deliberately not TopicService.Create's shape. That one takes a broker

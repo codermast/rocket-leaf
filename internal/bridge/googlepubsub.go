@@ -15,11 +15,6 @@ type GooglePubSubService struct {
 	service *pubsubservice.Service
 }
 
-// NewGooglePubSubService wires the bridge to the service.
-func NewGooglePubSubService(service *pubsubservice.Service) *GooglePubSubService {
-	return &GooglePubSubService{service: service}
-}
-
 // GooglePubSubTopicInput is a topic as the topic form collects it.
 //
 // Deliberately not TopicService.Create's shape. That one takes a broker

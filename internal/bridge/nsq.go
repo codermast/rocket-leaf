@@ -16,11 +16,6 @@ type NSQService struct {
 	service *nsqservice.Service
 }
 
-// NewNSQService wires the bridge to the service.
-func NewNSQService(service *nsqservice.Service) *NSQService {
-	return &NSQService{service: service}
-}
-
 // CreateTopic declares a topic on every nsqd in the connection.
 //
 // Not TopicService.Create, whose input is a broker address, two queue counts

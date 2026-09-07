@@ -14,11 +14,6 @@ type ActiveMQService struct {
 	service *activemqservice.Service
 }
 
-// NewActiveMQService wires the bridge to the service.
-func NewActiveMQService(service *activemqservice.Service) *ActiveMQService {
-	return &ActiveMQService{service: service}
-}
-
 // PurgeQueue drops everything a destination is holding. There is no undo.
 //
 // On an Artemis topic this empties every subscription under the address rather

@@ -16,11 +16,6 @@ type SQSService struct {
 	service *sqsservice.Service
 }
 
-// NewSQSService wires the bridge to the service.
-func NewSQSService(service *sqsservice.Service) *SQSService {
-	return &SQSService{service: service}
-}
-
 // SQSQueueInput is a queue as the queue form collects it.
 //
 // Deliberately not TopicService.Create's shape. That one takes a broker
