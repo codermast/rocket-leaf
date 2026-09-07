@@ -40,14 +40,8 @@ const (
 // still travels in AttrArguments untouched.
 const (
 	ArgMessageTTL           = "x-message-ttl"
-	ArgExpires              = "x-expires"
 	ArgDeadLetterExchange   = "x-dead-letter-exchange"
 	ArgDeadLetterRoutingKey = "x-dead-letter-routing-key"
-	ArgMaxLength            = "x-max-length"
-	ArgMaxLengthBytes       = "x-max-length-bytes"
-	ArgOverflow             = "x-overflow"
-	ArgMaxPriority          = "x-max-priority"
-	ArgSingleActiveConsumer = "x-single-active-consumer"
 	ArgQueueType            = "x-queue-type"
 )
 

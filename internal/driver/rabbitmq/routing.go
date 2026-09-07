@@ -97,9 +97,3 @@ func (c *Conn) ListBindings(ctx context.Context, namespace string) ([]*model.Bin
 	}
 	return bindings, nil
 }
-
-// The default exchange has no name, and every queue is bound to it implicitly
-// by its own name. It is worth naming rather than rendering as a blank cell,
-// because a reader seeing an empty source has no way to know that is the
-// answer rather than a bug.
-const DefaultExchangeName = "amq.default"

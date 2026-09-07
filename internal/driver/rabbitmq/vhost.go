@@ -13,8 +13,7 @@ import (
 // The limits a virtual host can carry. They are the broker's own names, and
 // the page labels them rather than inventing its own.
 const (
-	LimitMaxConnections = "max-connections"
-	LimitMaxQueues      = "max-queues"
+	LimitMaxQueues = "max-queues"
 )
 
 // ListNamespaces returns every virtual host, with the limits set on each.

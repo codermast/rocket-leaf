@@ -16,7 +16,6 @@ require (
 	github.com/aws/aws-sdk-go-v2/credentials v1.20.3
 	github.com/aws/aws-sdk-go-v2/service/kinesis v1.53.0
 	github.com/aws/aws-sdk-go-v2/service/sqs v1.51.0
-	github.com/aws/smithy-go v1.28.1
 	github.com/eclipse/paho.golang v0.23.0
 	github.com/eclipse/paho.mqtt.golang v1.5.1
 	github.com/gorilla/websocket v1.5.3
@@ -65,6 +64,7 @@ require (
 	github.com/aws/aws-sdk-go-v2/service/sso v1.37.0 // indirect
 	github.com/aws/aws-sdk-go-v2/service/ssooidc v1.42.0 // indirect
 	github.com/aws/aws-sdk-go-v2/service/sts v1.49.0 // indirect
+	github.com/aws/smithy-go v1.28.1 // indirect
 	github.com/beorn7/perks v1.0.1 // indirect
 	github.com/bits-and-blooms/bitset v1.12.0 // indirect
 	github.com/cespare/xxhash/v2 v2.3.0 // indirect

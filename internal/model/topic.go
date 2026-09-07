@@ -16,7 +16,6 @@ type TopicMessageType string
 const (
 	MessageTypeNormal TopicMessageType = "Normal"
 	MessageTypeFIFO   TopicMessageType = "FIFO"
-	MessageTypeDelay  TopicMessageType = "Delay"
 )
 
 // TopicRouteItem is a Topic route entry.

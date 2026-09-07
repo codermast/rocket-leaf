@@ -132,8 +132,7 @@ const (
 // created at the latest position silently discards whatever is already on the
 // topic, which is the opposite of why somebody creates one ahead of a consumer.
 const (
-	StartAtEarliest = "earliest"
-	StartAtLatest   = "latest"
+	StartAtLatest = "latest"
 )
 
 // MessageItem property keys.

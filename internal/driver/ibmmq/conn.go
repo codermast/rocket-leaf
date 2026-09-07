@@ -55,13 +55,6 @@ const (
 // a second or two to answer its first call.
 const defaultTimeout = 10 * time.Second
 
-// tiers is what answered when the connection opened.
-type tiers struct {
-	// messagingReason is empty when the messaging interface is usable, and
-	// otherwise the i18n key saying why it is not.
-	messagingReason string
-}
-
 // Conn is one live connection to one queue manager through one mqweb server.
 //
 // "One connection" is an HTTP client rather than a socket: every call is a

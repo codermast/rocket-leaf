@@ -60,14 +60,13 @@ type ConsumerGroupItem struct {
 
 // ConsumerGroupConfig holds consumer group create/update configuration.
 type ConsumerGroupConfig struct {
-	Group            string      `json:"group"`            // Consumer group name
-	Cluster          string      `json:"cluster"`          // Cluster name
-	BrokerAddr       string      `json:"brokerAddr"`       // Broker address
-	ConsumeMode      ConsumeMode `json:"consumeMode"`      // Consume mode
-	MaxRetry         int         `json:"maxRetry"`         // Max retry times
-	ConsumeFromWhere string      `json:"consumeFromWhere"` // Consume start position
-	Topics           []string    `json:"topics"`           // Subscribed Topic list
-	Remark           string      `json:"remark"`           // Remark
+	Group       string      `json:"group"`       // Consumer group name
+	Cluster     string      `json:"cluster"`     // Cluster name
+	BrokerAddr  string      `json:"brokerAddr"`  // Broker address
+	ConsumeMode ConsumeMode `json:"consumeMode"` // Consume mode
+	MaxRetry    int         `json:"maxRetry"`    // Max retry times
+	Topics      []string    `json:"topics"`      // Subscribed Topic list
+	Remark      string      `json:"remark"`      // Remark
 }
 
 // ResetOffsetRequest is a request to reset offsets.

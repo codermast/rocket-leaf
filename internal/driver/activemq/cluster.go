@@ -37,7 +37,6 @@ const (
 	AttrTotalDequeued = "totalDequeued"
 	AttrConnections   = "connections"
 	AttrConsumers     = "consumers"
-	AttrProducers     = "producers"
 	AttrAcceptors     = "acceptors"
 	AttrClustered     = "clustered"
 	AttrHAPolicy      = "haPolicy"

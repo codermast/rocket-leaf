@@ -112,10 +112,3 @@ type MessageTrackItem struct {
 	ConsumeStatus string `json:"consumeStatus"` // Consume status description
 	ExceptionDesc string `json:"exceptionDesc"` // Exception description
 }
-
-// ResendMessageRequest is a request to resend a message.
-type ResendMessageRequest struct {
-	Topic      string `json:"topic"`      // Topic name
-	MessageID  string `json:"messageId"`  // Message ID
-	BrokerAddr string `json:"brokerAddr"` // Broker address
-}

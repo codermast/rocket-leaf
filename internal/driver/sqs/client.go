@@ -13,7 +13,6 @@ import (
 	"github.com/aws/aws-sdk-go-v2/credentials"
 	awssqs "github.com/aws/aws-sdk-go-v2/service/sqs"
 	"github.com/aws/aws-sdk-go-v2/service/sqs/types"
-	"github.com/aws/smithy-go"
 
 	"github.com/amigoer/mq-studio/internal/model"
 )
@@ -124,18 +123,4 @@ func newClient(ctx context.Context, config clientConfig) (*awssqs.Client, error)
 func notFound(err error) bool {
 	var missing *types.QueueDoesNotExist
 	return errors.As(err, &missing)
-}
-
-// apiError returns the service's own error code, or an empty string for a
-// failure that never reached SQS.
-//
-// The SDK wraps every service error in an operation error whose text names the
-// operation and the request id, so matching on the message would depend on
-// wording that changes between SDK releases.
-func apiError(err error) string {
-	var api smithy.APIError
-	if errors.As(err, &api) {
-		return api.ErrorCode()
-	}
-	return ""
 }

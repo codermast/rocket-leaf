@@ -152,11 +152,6 @@ type lookupTopics struct {
 	Topics []string `json:"topics"`
 }
 
-// lookupChannels is nsqlookupd's /channels?topic=.
-type lookupChannels struct {
-	Channels []string `json:"channels"`
-}
-
 // lookupInfo is nsqlookupd's /info, which carries a version and nothing else.
 // That emptiness is load-bearing: it is what tells the two daemons apart.
 type lookupInfo struct {

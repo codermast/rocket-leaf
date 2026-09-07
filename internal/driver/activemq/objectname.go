@@ -152,13 +152,6 @@ const (
 	topicKind destinationKind = "topic"
 )
 
-func (r routingType) kind() destinationKind {
-	if r == multicast {
-		return topicKind
-	}
-	return queueKind
-}
-
 func (k destinationKind) routing() routingType {
 	if k == topicKind {
 		return multicast
