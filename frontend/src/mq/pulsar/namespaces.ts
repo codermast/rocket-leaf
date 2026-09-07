@@ -31,9 +31,6 @@ export const NAMESPACE_LIMITS = [
   LimitMaxConsumersPerTopic,
   LimitMaxConsumersPerSubscription,
 ] as const;
-
-export type NamespaceLimit = (typeof NAMESPACE_LIMITS)[number];
-
 /**
  * One limit's value, or null when the broker decides.
  *

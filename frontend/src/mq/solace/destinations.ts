@@ -152,18 +152,6 @@ export function destination(row: Destination): SolaceDestination {
 export function halted(entry: SolaceDestination): boolean {
   return !entry.ingressEnabled || !entry.egressEnabled;
 }
-
-/**
- * How full a queue's spool quota is, or null where there is nothing to
- * compare. The quota is in megabytes and the usage is in bytes, which is the
- * broker's own pair of units rather than a mistake here.
- */
-export function fullness(entry: SolaceDestination): number | null {
-  if (entry.spoolUsageBytes == null || entry.maxSpoolUsageMb == null) return null;
-  if (entry.maxSpoolUsageMb <= 0) return null;
-  return entry.spoolUsageBytes / (entry.maxSpoolUsageMb * 1024 * 1024);
-}
-
 /** Whether anything is set up to take this queue's undelivered messages. */
 export function hasDeadMsgQueue(entry: SolaceDestination): boolean {
   return entry.deadMsgQueue != null && entry.deadMsgQueue !== "";

@@ -10,7 +10,7 @@ import {
 } from "@/components/ui/chart";
 import { cn } from "@/lib/utils";
 
-export interface Series {
+interface Series {
   /** Shown in the legend and the tooltip; never identified by colour alone. */
   label: string;
   /** A `var(--c-series-N)` token, in the palette's fixed order. */

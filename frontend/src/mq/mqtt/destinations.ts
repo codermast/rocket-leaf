@@ -14,10 +14,6 @@ import type { Destination } from "@bindings/model/models";
 const AttrSource = "source";
 const AttrRetainedBytes = "retainedBytes";
 const AttrQoS = "qos";
-
-/** The listing answered from the broker's retained messages. */
-export const SOURCE_RETAINED = "retained";
-
 type Attributed = { attributes?: Record<string, string | undefined> };
 
 function attr(source: Attributed, key: string): string {

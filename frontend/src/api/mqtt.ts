@@ -29,11 +29,6 @@ export const getMqttClients = (connID: number): Promise<ClientConnection[]> =>
  */
 export const kickMqttClient = (connID: number, clientID: string): Promise<void> =>
   MQTTService.KickClient(connID, clientID);
-
-/** Ends every session a username holds. */
-export const kickMqttUser = (connID: number, username: string): Promise<void> =>
-  MQTTService.KickUser(connID, username);
-
 /**
  * Publishes with everything MQTT can carry.
  *
@@ -78,14 +73,6 @@ export const stopMqttSubscription = (connID: number, id: string): Promise<void> 
 /** What this connection is currently streaming. */
 export const getMqttSubscriptions = (connID: number): Promise<LiveSubscription[]> =>
   MQTTService.Subscriptions(connID).then(present);
-
-/** The topic filters one client holds, from the broker's management API. */
-export const getMqttClientSubscriptions = (
-  connID: number,
-  clientID: string,
-): Promise<ClientSubscription[]> =>
-  MQTTService.ClientSubscriptions(connID, clientID).then(present);
-
 /** Every filter the broker is holding, across clients. */
 export const getMqttBrokerSubscriptions = (connID: number): Promise<ClientSubscription[]> =>
   MQTTService.BrokerSubscriptions(connID).then(present);

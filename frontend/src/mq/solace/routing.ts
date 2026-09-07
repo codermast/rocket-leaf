@@ -104,11 +104,3 @@ export function topicProblem(topic: string): TopicProblem | null {
   }
   return null;
 }
-
-/** The subscriptions pointing at one queue. */
-export function forQueue(
-  subscriptions: readonly SolaceSubscription[],
-  queue: string,
-): SolaceSubscription[] {
-  return subscriptions.filter((entry) => entry.queue === queue);
-}

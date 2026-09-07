@@ -59,14 +59,6 @@ export const deleteStream = (connID: number, name: string): Promise<void> =>
  */
 export const purgeStream = (connID: number, input: PurgeInput): Promise<TrimResult> =>
   NATSService.PurgeStream(connID, input).then(required);
-
-/** Removes messages by sequence, and reports how many were there to remove. */
-export const deleteMessages = (
-  connID: number,
-  stream: string,
-  sequences: string[],
-): Promise<TrimResult> => NATSService.DeleteMessages(connID, stream, sequences).then(required);
-
 /** Declares a consumer on a stream. Refused if one of that name exists. */
 export const createConsumer = (connID: number, input: NATSConsumerInput): Promise<void> =>
   NATSService.CreateConsumer(connID, input);

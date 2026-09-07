@@ -88,14 +88,6 @@ export const send = (
   input: AzureServiceBusSendInput,
 ): Promise<AzureServiceBusSendResult> =>
   AzureServiceBusService.Send(connID, input).then(required);
-
-/** Take back scheduled messages that have not been enqueued yet. */
-export const cancelScheduled = (
-  connID: number,
-  entity: string,
-  sequences: number[],
-): Promise<void> => AzureServiceBusService.CancelScheduled(connID, entity, sequences);
-
 /**
  * Declare a rule on a subscription.
  *

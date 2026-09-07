@@ -3,7 +3,7 @@ import type { ReactNode } from "react";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { cn } from "@/lib/utils";
 
-export type SegOption<T extends string> = { value: T; label: ReactNode };
+type SegOption<T extends string> = { value: T; label: ReactNode };
 
 /**
  * The small segmented value switcher (时间范围, 视图切换…): shadcn Tabs used

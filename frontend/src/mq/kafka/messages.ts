@@ -30,10 +30,6 @@ const NULL_KEY = "\u0000__mqs_null_key";
 
 export const hasKey = (record: MessageItem): boolean => record.keys !== NULL_KEY;
 export const keyOf = (record: MessageItem): string => (hasKey(record) ? record.keys : "");
-
-export const partitionOf = (record: MessageItem): number => record.queueId;
-export const offsetOf = (record: MessageItem): number => record.queueOffset;
-
 /** Headers, which is what Kafka calls the canonical properties map. */
 export const headersOf = (record: MessageItem): Record<string, string> => {
   const headers: Record<string, string> = {};

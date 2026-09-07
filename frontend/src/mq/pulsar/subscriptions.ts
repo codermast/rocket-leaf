@@ -22,21 +22,6 @@ import {
   attr,
   count,
 } from "./attributes";
-
-/**
- * The four ways a Pulsar subscription can dispatch.
- *
- * Reported, never edited: the type is decided by the consumers that attach to
- * the subscription, not stored as configuration, so there is no admin call to
- * change it and no form that should offer to.
- */
-export const SubscriptionType = {
-  Exclusive: "Exclusive",
-  Shared: "Shared",
-  Failover: "Failover",
-  KeyShared: "Key_Shared",
-} as const;
-
 /** Where a newly created subscription starts reading. */
 export const StartAt = { Earliest: "earliest", Latest: "latest" } as const;
 export type StartAtValue = (typeof StartAt)[keyof typeof StartAt];

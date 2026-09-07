@@ -10,10 +10,6 @@ import type { GroupConsumer, PendingEntry, PendingSummary } from "@bindings/mode
 /** A key unique across streams and groups, for selection in one table. */
 export const pendingKey = (entry: PendingEntry): string =>
   `${entry.ref.namespace} ${entry.ref.name} ${entry.id}`;
-
-export const entryStream = (entry: PendingEntry): string => entry.ref.namespace;
-export const entryGroup = (entry: PendingEntry): string => entry.ref.name;
-
 /**
  * How long an entry has been sitting with nobody finishing it.
  *
@@ -31,10 +27,6 @@ export const idleMs = (entry: PendingEntry): number => entry.idleMs;
  * moves it anywhere.
  */
 export const deliveries = (entry: PendingEntry): number => entry.deliveries;
-
-/** How long since a consumer last read anything. */
-export const consumerIdleMs = (consumer: GroupConsumer): number => consumer.idleMs;
-
 /**
  * How long since a consumer did anything at all, or null on a server that does
  * not report it.
@@ -67,10 +59,6 @@ export function consumerHealth(
   if (consumer.pending === 0) return "idle";
   return consumer.idleMs >= abandonedAfterMs ? "abandoned" : "working";
 }
-
-/** How many entries the group is owed in total. */
-export const pendingCount = (summary: PendingSummary): number => summary.count;
-
 /**
  * The oldest pending id, or null when nothing is owed.
  *

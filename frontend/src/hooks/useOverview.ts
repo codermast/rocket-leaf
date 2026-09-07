@@ -14,15 +14,6 @@ export interface OverviewSnapshot {
   consumerGroups: Subscription[];
   lastUpdated: Date;
 }
-
-export const EMPTY_OVERVIEW: OverviewSnapshot = {
-  cluster: null,
-  nodes: [],
-  topics: [],
-  consumerGroups: [],
-  lastUpdated: new Date(0),
-};
-
 /**
  * The overview's three reads, as one snapshot.
  *

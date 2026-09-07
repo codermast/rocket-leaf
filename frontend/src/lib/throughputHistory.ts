@@ -80,18 +80,6 @@ export function continuousHistoryRanges(
   ranges.push({ start, end: timestamps.length - 1 });
   return ranges;
 }
-
-export function throughputWindow(now: number = Date.now()): {
-  start: number;
-  end: number;
-} {
-  const end = Math.floor(now / THROUGHPUT_SAMPLE_MS) * THROUGHPUT_SAMPLE_MS;
-  return {
-    start: end - (THROUGHPUT_HISTORY_MINUTES - 1) * THROUGHPUT_SAMPLE_MS,
-    end,
-  };
-}
-
 function toMillis(timestamp: number): number {
   return timestamp < 1_000_000_000_000 ? timestamp * 1000 : timestamp;
 }

@@ -150,9 +150,3 @@ export function destination(row: Destination): IbmMqDestination {
 export function inhibited(entry: IbmMqDestination): boolean {
   return entry.inhibitGet || entry.inhibitPut;
 }
-
-/** How full a queue is, or null where there is no depth to compare. */
-export function fullness(entry: IbmMqDestination): number | null {
-  if (entry.depth == null || entry.maxDepth == null || entry.maxDepth <= 0) return null;
-  return entry.depth / entry.maxDepth;
-}

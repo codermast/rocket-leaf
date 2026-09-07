@@ -131,18 +131,3 @@ export function subscribers(destination: Destination): string[] {
     return [];
   }
 }
-
-/** The attributes a create or edit form submits back. */
-export function destinationSpecAttributes(input: {
-  brokerAddr: string;
-  readQueue: number;
-  writeQueue: number;
-  perm: string;
-}): Record<string, string> {
-  return {
-    brokerAddr: input.brokerAddr,
-    [AttrReadQueue]: String(input.readQueue),
-    [AttrWriteQueue]: String(input.writeQueue),
-    [AttrPerm]: input.perm,
-  };
-}

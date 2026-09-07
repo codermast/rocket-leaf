@@ -3,6 +3,14 @@ import { Card } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
 import { MAX_HIGHLIGHT_LENGTH, tokenizeJson, type JsonTokenKind } from "@/lib/jsonTokens";
 
+type TraceStep = {
+  title: ReactNode;
+  meta: ReactNode;
+  /** Bullet colour; defaults to the ok green. */
+  color?: string;
+  extra?: ReactNode;
+};
+
 /** The message-body card: a bordered, monospaced, lightly tinted JSON block. */
 export function JsonBlock({
   children,
@@ -25,19 +33,6 @@ export function JsonBlock({
     </Card>
   );
 }
-
-/** Two-space JSON indent, as rendered pre-formatted. */
-export const IND = "  ";
-
-export const JStr = ({ children }: { children: ReactNode }) => (
-  <span className="text-(--c-ok-text)">{children}</span>
-);
-export const JNum = ({ children }: { children: ReactNode }) => (
-  <span className="text-(--c-info-text)">{children}</span>
-);
-export const JDim = ({ children }: { children: ReactNode }) => (
-  <span className="text-muted-foreground">{children}</span>
-);
 
 /**
  * The same three colours as the pair above, keyed by what the scanner found,
@@ -68,14 +63,6 @@ export function JsonText({ children }: { children: string }) {
     </>
   );
 }
-
-export type TraceStep = {
-  title: ReactNode;
-  meta: ReactNode;
-  /** Bullet colour; defaults to the ok green. */
-  color?: string;
-  extra?: ReactNode;
-};
 
 /** The consumption trace — a bullet-and-rail vertical timeline. */
 export function Timeline({ steps }: { steps: readonly TraceStep[] }) {

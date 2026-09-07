@@ -11,7 +11,6 @@
 import type { Subscription } from "@bindings/model/models";
 
 const AttrState = "state";
-const AttrProtocol = "protocol";
 const AttrAssignor = "assignor";
 const AttrCoordinator = "coordinator";
 const AttrTopics = "topics";
@@ -25,7 +24,6 @@ function attr(group: Subscription, key: string): string {
 }
 
 export const state = (group: Subscription): string => attr(group, AttrState);
-export const protocolType = (group: Subscription): string => attr(group, AttrProtocol);
 export const assignor = (group: Subscription): string => attr(group, AttrAssignor);
 export const coordinator = (group: Subscription): string => attr(group, AttrCoordinator);
 

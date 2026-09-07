@@ -1,6 +1,5 @@
 import type { ReactNode } from "react";
 import { useTranslation } from "react-i18next";
-import { ArrowRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   SelectField,
@@ -48,17 +47,5 @@ export const TABLE_CARD = {
   display: "flex",
   flexDirection: "column",
 } as const;
-
-/** The "查看全部" link in a table-card header, arrow included. */
-export function ViewAll({ children }: { children?: ReactNode }) {
-  const { t } = useTranslation();
-  return (
-    <span style={{ display: "inline-flex", alignItems: "center", gap: "4px", fontSize: "11.5px", color: "var(--c-fg-2)" }}>
-      {children ?? t("board.common.viewAll")}
-      <ArrowRight size={13} aria-hidden />
-    </span>
-  );
-}
-
 /** The mono, muted secondary cell used for topic/queue names in TOP tables. */
 export const NAME_CELL = { fontSize: "11px", color: "var(--c-mono-dim)" } as const;

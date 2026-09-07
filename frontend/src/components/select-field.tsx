@@ -9,7 +9,7 @@ import {
 } from "@/components/ui/select";
 import { cn } from "@/lib/utils";
 
-export type SelectFieldOption<T extends string = string> = {
+type SelectFieldOption<T extends string = string> = {
   value: T;
   label?: ReactNode;
   disabled?: boolean;

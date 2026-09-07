@@ -1,6 +1,6 @@
 import { KafkaService } from "@bindings/bridge";
 import type { KafkaTopicInput } from "@bindings/bridge/models";
-import { present, required } from "./client";
+import { required } from "./client";
 import type { AccessPrincipalSpec, AccessRule, QuotaEntity } from "@bindings/model/models";
 
 export type { KafkaTopicInput };
@@ -17,17 +17,6 @@ export type { KafkaTopicInput };
  */
 export const createKafkaTopic = (connID: number, input: KafkaTopicInput): Promise<void> =>
   KafkaService.CreateTopic(connID, input);
-
-/**
- * Changes only the settings it is given. An empty value puts one back to the
- * cluster default rather than setting it to the empty string.
- */
-export const alterKafkaTopicConfigs = (
-  connID: number,
-  name: string,
-  configs: Record<string, string>,
-): Promise<void> => KafkaService.AlterTopicConfigs(connID, name, configs);
-
 /**
  * Removes a topic and everything in it.
  *
@@ -64,22 +53,6 @@ export const resetKafkaGroupOffsets = (
   connID: number,
   input: KafkaOffsetReset,
 ): Promise<void> => KafkaService.ResetGroupOffsets(connID, input);
-
-/** Forgets a group's position on some topics without deleting the group. */
-export const deleteKafkaGroupOffsets = (
-  connID: number,
-  group: string,
-  topics: string[],
-): Promise<void> => KafkaService.DeleteGroupOffsets(connID, group, topics);
-
-/** Copies one group's positions onto another. An empty topic copies them all. */
-export const cloneKafkaGroupOffsets = (
-  connID: number,
-  from: string,
-  to: string,
-  topic: string,
-): Promise<void> => KafkaService.CloneGroupOffsets(connID, from, to, topic);
-
 /** Removes a consumer group and the offsets it holds. */
 export const deleteKafkaGroup = (connID: number, group: string): Promise<void> =>
   KafkaService.DeleteGroup(connID, group);
@@ -146,22 +119,9 @@ export const removeKafkaPrincipal = (connID: number, name: string): Promise<void
  */
 export const truncateKafkaTopic = (connID: number, name: string): Promise<void> =>
   KafkaService.TruncateTopic(connID, name);
-
-/** Takes a batch off the head of each partition; returns how many it removed. */
-export const dropOldestKafkaRecords = (
-  connID: number,
-  name: string,
-  limit: number,
-): Promise<number> => KafkaService.DropOldestRecords(connID, name, limit);
-
 /** Puts each partition's leadership back on the first broker in its replica list. */
 export const electKafkaPreferredLeaders = (connID: number): Promise<void> =>
   KafkaService.ElectPreferredLeaders(connID);
-
-/** The partitions being moved between brokers right now. */
-export const getKafkaReassignments = (connID: number) =>
-  KafkaService.Reassignments(connID).then(present);
-
 /** Rewrites where a partition's replicas live. The first broker leads. */
 export const reassignKafkaPartition = (
   connID: number,
@@ -169,14 +129,6 @@ export const reassignKafkaPartition = (
   partition: number,
   brokers: number[],
 ): Promise<void> => KafkaService.Reassign(connID, topic, partition, brokers);
-
-/** Stops a move in flight, leaving the partition wherever it has got to. */
-export const cancelKafkaReassignment = (
-  connID: number,
-  topic: string,
-  partition: number,
-): Promise<void> => KafkaService.CancelReassignment(connID, topic, partition);
-
 /** The quotas page in one answer. */
 export const getKafkaQuotas = (connID: number) =>
   KafkaService.Quotas(connID).then(required);

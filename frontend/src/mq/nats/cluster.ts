@@ -35,8 +35,6 @@ const AttrJSStorage = "jetstreamStorage";
 const AttrMetaLeader = "metaLeader";
 const AttrIsMetaLeader = "isMetaLeader";
 const AttrSource = "readVia";
-
-export const SOURCE_SYSTEM = "system";
 export const SOURCE_MONITOR = "monitor";
 
 function attr(node: Node | ClusterOverview, key: string): string | null {

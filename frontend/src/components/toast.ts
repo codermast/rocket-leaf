@@ -1,5 +1,14 @@
 import { toast as sonner } from "sonner";
 
+type ToastApi = typeof toast;
+
+type ToastOptions = {
+  description?: string;
+  action?: { label: string; onClick: () => void };
+  /** Milliseconds on screen; 0 stays until dismissed. */
+  duration?: number;
+};
+
 /**
  * Transient feedback for the actions the settings page fires -- saving
  * credentials, exporting a config, checking for an update. The canvas draws no
@@ -15,13 +24,6 @@ export type ToastTone = "success" | "error" | "info";
 
 /** Sonner's handle on a raised toast, for the few that outlive their own turn. */
 export type ToastId = string | number;
-
-export type ToastOptions = {
-  description?: string;
-  action?: { label: string; onClick: () => void };
-  /** Milliseconds on screen; 0 stays until dismissed. */
-  duration?: number;
-};
 
 /** Long enough to read the line; a failure earns the time to act on it. */
 const TIME_ON_SCREEN: Record<ToastTone, number> = { success: 4000, info: 4500, error: 7000 };
@@ -47,8 +49,6 @@ export const toast = {
      themselves, and dismissing one the user is still reading is a bug. */
   dismiss: (id: ToastId) => sonner.dismiss(id),
 } as const;
-
-export type ToastApi = typeof toast;
 
 /** The stack is global; the hook is what the boards already call. */
 export function useToast(): ToastApi {

@@ -76,8 +76,6 @@ export const connect = (id: number): Promise<void> =>
   ConnectionService.Connect(id);
 export const disconnect = (id: number): Promise<void> =>
   ConnectionService.Disconnect(id);
-export const connectDefault = (): Promise<void> =>
-  ConnectionService.ConnectDefault();
 export const setDefaultConnection = (id: number): Promise<void> =>
   ConnectionService.SetDefault(id);
 export const testConnection = (id: number): Promise<string> =>

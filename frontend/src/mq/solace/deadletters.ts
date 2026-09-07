@@ -15,14 +15,10 @@
  */
 import type { DeadLetterQueue, DeadLetterSource } from "@bindings/model/models";
 
-/** What the driver writes into a source's exchange field. */
-export const SOURCE_QUEUE = "queue";
 export const SOURCE_TOPIC_ENDPOINT = "topicEndpoint";
 
 /** What it writes into a source's subscription field. */
 export const MOVES_EVERYTHING = "moves-everything";
-export const MOVES_MARKED_ONLY = "moves-marked-only";
-
 /**
  * Whether this queue exists at all.
  *

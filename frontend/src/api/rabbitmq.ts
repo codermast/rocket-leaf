@@ -15,7 +15,6 @@ import type {
   ClientChannel,
   ClientConnection,
   DeadLetterQueue,
-  Definitions,
   FederationUpstream,
   Identity,
   Namespace,
@@ -29,32 +28,7 @@ import type {
 import { present } from "./client";
 
 export type { DefinitionsPreview } from "@bindings/bridge/models";
-export type {
-  BrokerCensus,
-  BrokerHealth,
-  BrokerRates,
-  ClientChannel,
-  ClientConnection,
-  DeadLetterQueue,
-  DeadLetterSource,
-  DeprecatedFeature,
-  Definitions,
-  FeatureFlag,
-  FederationUpstream,
-  Identity,
-  Namespace,
-  NamespacePermission,
-  Policy,
-  PublishResult,
-  RuntimeParameter,
-  Shovel,
-  StreamClients,
-  StreamConsumer,
-  StreamPublisher,
-  TopicPermission,
-  HealthCheck,
-  ResourceAlarm,
-} from "@bindings/model/models";
+export type { BrokerCensus, BrokerHealth, ClientChannel, ClientConnection, DeadLetterQueue, DeadLetterSource, DeprecatedFeature, Definitions, FeatureFlag, FederationUpstream, Identity, Namespace, NamespacePermission, Policy, PublishResult, RuntimeParameter, Shovel, StreamClients, StreamConsumer, StreamPublisher, TopicPermission, HealthCheck, ResourceAlarm } from "@bindings/model/models";
 
 /**
  * The broker's running totals, or null when nothing is connected.
@@ -346,21 +320,6 @@ export const getTopicPermissions = (connID: number): Promise<TopicPermission[]> 
 /** Both user and operator policies, marked apart by the `operator` flag. */
 export const getPolicies = (connID: number): Promise<Policy[]> =>
   RabbitMQService.Policies(connID).then(present);
-
-/**
- * Which policies the broker says actually apply to one destination.
- *
- * Worth asking rather than working out: only the highest-priority match
- * applies and policies do not merge, which is the rule most people get wrong.
- */
-export const getMatchingPolicies = (
-  connID: number,
-  vhost: string,
-  name: string,
-  kind: "queue" | "exchange",
-): Promise<Policy[]> =>
-  RabbitMQService.MatchingPolicies(connID, vhost, name, kind).then(present);
-
 export interface PolicyInput {
   vhost: string;
   name: string;
@@ -393,18 +352,6 @@ export const deleteRuntimeParameter = (
   vhost: string,
   name: string,
 ): Promise<void> => RabbitMQService.DeleteRuntimeParameter(connID, component, vhost, name);
-
-/**
- * The broker's topology as one document, with a count of what it holds.
- *
- * An empty vhost exports the whole broker; a named one exports just that
- * virtual host, which carries no users or permissions - those are broker-wide,
- * and including them would put every password hash in a file about one
- * application.
- */
-export const getDefinitions = (connID: number, vhost = ""): Promise<Definitions | null> =>
-  RabbitMQService.Definitions(connID, vhost);
-
 /** Prompts for a destination and writes the document. Empty when cancelled. */
 export const exportDefinitionsToFile = (connID: number, vhost = ""): Promise<string> =>
   RabbitMQService.ExportDefinitionsToFile(connID, vhost);

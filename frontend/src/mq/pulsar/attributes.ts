@@ -37,7 +37,6 @@ export const AttrSubscriptionBlocked = "pulsarSubscriptionBlocked";
 export const AttrSubscriptionRedeliverRate = "pulsarSubscriptionRedeliverRate";
 export const AttrSubscriptionActiveConsumer = "pulsarSubscriptionActiveConsumer";
 export const AttrSubscriptionStartAt = "pulsarSubscriptionStartAt";
-
 /** ClusterOverview. */
 export const AttrClusterName = "pulsarCluster";
 export const AttrClusterServiceURL = "pulsarClusterWebServiceUrl";

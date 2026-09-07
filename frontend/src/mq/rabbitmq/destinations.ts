@@ -31,11 +31,7 @@ function attr(destination: Destination, key: string): string {
 function count(destination: Destination, key: string): number {
   const value = Number.parseInt(attr(destination, key), 10);
   return Number.isNaN(value) ? 0 : value;
-}
-
-export const queueName = (destination: Destination): string =>
-  destination.ref.name;
-export const vhost = (destination: Destination): string =>
+}export const vhost = (destination: Destination): string =>
   destination.ref.namespace;
 export const durable = (destination: Destination): boolean =>
   attr(destination, AttrDurable) === "true";
@@ -132,14 +128,10 @@ export function argumentsOf(destination: Destination): Record<string, unknown> {
 export const ARG_MESSAGE_TTL = "x-message-ttl";
 export const ARG_EXPIRES = "x-expires";
 export const ARG_DLX = "x-dead-letter-exchange";
-export const ARG_DLX_ROUTING_KEY = "x-dead-letter-routing-key";
 export const ARG_MAX_LENGTH = "x-max-length";
 export const ARG_MAX_LENGTH_BYTES = "x-max-length-bytes";
-export const ARG_OVERFLOW = "x-overflow";
 export const ARG_MAX_PRIORITY = "x-max-priority";
 export const ARG_SINGLE_ACTIVE_CONSUMER = "x-single-active-consumer";
-export const ARG_QUEUE_TYPE = "x-queue-type";
-
 /**
  * The short tags a queue's row shows, from what it was actually declared with.
  *

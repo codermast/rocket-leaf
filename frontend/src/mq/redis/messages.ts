@@ -26,8 +26,6 @@ export const streamOf = (message: MessageItem): string => message.topic;
  * half is the timestamp rather than a guess at one.
  */
 export const addedAt = (message: MessageItem): string => message.storeTime;
-export const addedAtMs = (message: MessageItem): number => message.storeTimestamp;
-
 /** One field of an entry. */
 export interface EntryField {
   name: string;

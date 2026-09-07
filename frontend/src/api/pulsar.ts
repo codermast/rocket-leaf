@@ -1,7 +1,6 @@
 import { MessageService, PulsarService } from "@bindings/bridge";
 import type {
   PulsarNamespaceInput,
-  PulsarTenantInput,
   PulsarGrantInput,
   PulsarPublishInput,
   PulsarPublishResult,
@@ -32,7 +31,6 @@ export type {
   PulsarGrantInput,
   PulsarPublishInput,
   PulsarPublishResult,
-  PulsarTenantInput,
   PulsarTenantView,
   PulsarTopicInput,
   TopicPermission,
@@ -49,19 +47,6 @@ export type {
 /** Every tenant on the cluster. Listing them needs a superuser. */
 export const getPulsarTenants = (connID: number): Promise<PulsarTenantView[]> =>
   PulsarService.Tenants(connID).then(present);
-
-/** Creates a tenant, or updates the one already there. */
-export const savePulsarTenant = (connID: number, input: PulsarTenantInput): Promise<void> =>
-  PulsarService.SaveTenant(connID, input);
-
-/** Deletes a tenant. Pulsar refuses while it still holds namespaces. */
-export const removePulsarTenant = (connID: number, name: string): Promise<void> =>
-  PulsarService.RemoveTenant(connID, name);
-
-/** What the tenant form offers for its allowed-cluster list. */
-export const getPulsarClusters = (connID: number): Promise<string[]> =>
-  PulsarService.Clusters(connID).then(present);
-
 /** Every namespace under the profile's tenant, with the limits actually set. */
 export const getPulsarNamespaces = (connID: number): Promise<Namespace[]> =>
   PulsarService.Namespaces(connID).then(present);
@@ -127,13 +112,6 @@ export const createPulsarTopic = (
   connID: number,
   input: PulsarTopicInput,
 ): Promise<void> => PulsarService.CreateTopic(connID, input);
-
-/** Adds partitions. Pulsar can never remove them. */
-export const raisePulsarPartitions = (
-  connID: number,
-  input: PulsarTopicInput,
-): Promise<void> => PulsarService.RaisePartitions(connID, input);
-
 /** Deletes a topic. Pulsar refuses while a client is still attached. */
 export const removePulsarTopic = (
   connID: number,

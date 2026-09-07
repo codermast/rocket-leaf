@@ -46,17 +46,6 @@ export async function requestDesktopNotifyPermission(): Promise<boolean> {
     return false;
   }
 }
-
-/** Whether anything would actually be shown, without prompting for it. */
-export async function desktopNotifyAuthorized(): Promise<boolean> {
-  try {
-    if (await native.CheckNotificationAuthorization()) return true;
-  } catch {
-    // Fall through to the Web API.
-  }
-  return webApiPresent() && Notification.permission === "granted";
-}
-
 export async function sendDesktopNotification(
   notification: DesktopNotification,
 ): Promise<boolean> {

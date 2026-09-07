@@ -21,7 +21,6 @@ const AttrOpsPerSec = "opsPerSec";
 const AttrKeyspaceHits = "keyspaceHits";
 const AttrKeyspaceMisses = "keyspaceMisses";
 const AttrAOFEnabled = "aofEnabled";
-const AttrRDBLastSave = "rdbLastSaveTime";
 const AttrRDBLastStatus = "rdbLastBgsaveStatus";
 const AttrRDBChangesSince = "rdbChangesSinceLastSave";
 const AttrAOFLastStatus = "aofLastRewriteStatus";
@@ -114,13 +113,6 @@ export const clusterEnabled = (node: Node): boolean =>
   attr(node, AttrClusterEnabled) === "1";
 export const connectedReplicas = (node: Node): number | null =>
   number(node, AttrConnectedReplica);
-
-/** Unix seconds of the last successful snapshot, or null if there has been none. */
-export function lastSaveUnix(node: Node): number | null {
-  const value = number(node, AttrRDBLastSave);
-  return value == null || value === 0 ? null : value;
-}
-
 /** How many writes have happened since the last snapshot: what a restart loses. */
 export const changesSinceLastSave = (node: Node): number | null =>
   number(node, AttrRDBChangesSince);

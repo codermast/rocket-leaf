@@ -152,14 +152,6 @@ export const queryEntries = (connID: number, query: EntryQuery): Promise<Message
       ...(query.contains ? { [FILTER_CONTAINS]: query.contains } : {}),
     },
   }).then(present);
-
-/** Reads one entry by its id, which in this family is an exact lookup. */
-export const entryById = (
-  connID: number,
-  stream: string,
-  id: string,
-): Promise<MessageItem | null> => MessageService.ByID(connID, stream, id);
-
 /** One field of an entry being written. */
 export interface EntryField {
   name: string;
@@ -317,11 +309,6 @@ export const clientConnections = (connID: number): Promise<ClientConnection[]> =
  */
 export const closeClient = (connID: number, id: string): Promise<void> =>
   RedisStreamService.CloseClient(connID, id);
-
-/** Disconnects every connection one identity holds. */
-export const closeUserClients = (connID: number, username: string): Promise<void> =>
-  RedisStreamService.CloseUserClients(connID, username);
-
 /** The principals the server authenticates. */
 export const aclUsers = (connID: number): Promise<AclUser[]> =>
   RedisStreamService.AclUsers(connID).then(present);

@@ -86,21 +86,3 @@ export function matchesEverything(entry: ServiceBusRule): boolean {
 export function matchesNothing(entry: ServiceBusRule): boolean {
   return entry.kind === "false";
 }
-
-/**
- * Which subscriptions on a topic have no rule at all.
- *
- * The state this page exists to make visible. A subscription with no rules
- * receives nothing, reports itself Active, and shows an empty backlog because
- * nothing can arrive - so it is invisible on every board but this one and the
- * subscriptions list's status column.
- */
-export function subscriptionsWithNoRule(
-  rules: ServiceBusRule[],
-  subscriptions: { topic: string; name: string }[],
-): string[] {
-  const withRules = new Set(rules.map((entry) => `${entry.topic}/${entry.subscription}`));
-  return subscriptions
-    .map((row) => `${row.topic}/${row.name}`)
-    .filter((path) => !withRules.has(path));
-}

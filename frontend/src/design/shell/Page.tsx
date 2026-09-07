@@ -1,7 +1,6 @@
 import type { CSSProperties, ReactNode } from "react";
 import { RefreshCw } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Skeleton } from "@/components/ui/skeleton";
 import { useTranslation } from "react-i18next";
 
 /** The content column: `flex:1;display:flex;flex-direction:column;min-width:0`. */
@@ -144,22 +143,6 @@ export function ListPane({ children, style }: { children: ReactNode; style?: CSS
     </div>
   );
 }
-
-/** `.ph3` rows standing in for the rest of a long list, as the canvas draws them. */
-export function SkeletonRows({ widths, colSpan }: { widths: readonly string[]; colSpan: number }) {
-  return (
-    <>
-      {widths.map((w, i) => (
-        <tr key={i}>
-          <td colSpan={colSpan} className="px-3.5 py-2">
-            <Skeleton className="h-3.5" style={{ width: w }} />
-          </td>
-        </tr>
-      ))}
-    </>
-  );
-}
-
 /** The selection action bar pinned under a checkbox list (9b, 14c, 15a-15d). */
 export function BulkBar({ children, hint }: { children: ReactNode; hint?: ReactNode }) {
   return (

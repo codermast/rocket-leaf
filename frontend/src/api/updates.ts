@@ -8,9 +8,9 @@
  */
 import { Events } from "@wailsio/runtime";
 import { UpdateService } from "@bindings/bridge";
-import { Blocker, FailedStep, Kind, Phase, Policy, State, Status } from "@bindings/update/models";
+import { Blocker, Kind, Phase, Policy, State, Status } from "@bindings/update/models";
 
-export { Blocker, FailedStep, Kind, Phase, Policy, Status };
+export { Blocker, Kind, Phase, Policy, Status };
 export type UpdateState = State;
 
 /** The rungs of the policy ladder, in the order the settings row offers them. */

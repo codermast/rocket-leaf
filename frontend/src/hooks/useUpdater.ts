@@ -23,7 +23,6 @@ import {
   isUpdateBusy,
   onUpdateState,
   Phase,
-  Policy,
   skipUpdate,
   Status,
   UNKNOWN_UPDATE_STATE,
@@ -287,11 +286,3 @@ export function useUpdater(): UpdaterContextValue {
   if (context == null) throw new Error("useUpdater must be used within UpdaterProvider");
   return context;
 }
-
-/** The policy ladder, for the settings row that sets it. */
-export const UPDATE_POLICY_ORDER = [
-  Policy.PolicyOff,
-  Policy.PolicyNotify,
-  Policy.PolicyDownload,
-  Policy.PolicyAuto,
-] as const;

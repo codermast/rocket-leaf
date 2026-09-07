@@ -13,7 +13,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { filterOptions } from "@/lib/optionFilter";
 import { cn } from "@/lib/utils";
 
-export type ComboboxOption = { value: string; label?: ReactNode };
+type ComboboxOption = { value: string; label?: ReactNode };
 
 /**
  * Searchable picker for broker-derived lists — topics, groups, queues — where
