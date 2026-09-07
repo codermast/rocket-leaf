@@ -362,32 +362,12 @@
   },
   "mq": {
     "common": {
-      "terms": {
-        "destination": "目标",
-        "destinationPlural": "目标",
-        "subscription": "订阅方",
-        "subscriptionPlural": "订阅方",
-        "node": "节点",
-        "nodePlural": "节点",
-        "namespace": "命名空间",
-        "backlog": "积压"
-      },
       "form": {
         "timeoutSec": "超时时间（秒）",
         "authNone": "不启用"
       }
     },
     "rocketmq": {
-      "terms": {
-        "destination": "主题",
-        "destinationPlural": "主题",
-        "subscription": "消费者组",
-        "subscriptionPlural": "消费者组",
-        "node": "Broker",
-        "nodePlural": "Broker",
-        "namespace": "集群",
-        "backlog": "消息堆积"
-      },
       "name": "RocketMQ",
       "form": {
         "nameServer": "NameServer",
@@ -399,16 +379,6 @@
       }
     },
     "kafka": {
-      "terms": {
-        "destination": "主题",
-        "destinationPlural": "主题",
-        "subscription": "消费者组",
-        "subscriptionPlural": "消费者组",
-        "node": "Broker",
-        "nodePlural": "Broker",
-        "namespace": "集群",
-        "backlog": "消费延迟"
-      },
       "name": "Kafka",
       "form": {
         "bootstrapServers": "Bootstrap 地址",
@@ -433,16 +403,6 @@
       }
     },
     "rabbitmq": {
-      "terms": {
-        "destination": "队列",
-        "destinationPlural": "队列",
-        "subscription": "消费者",
-        "subscriptionPlural": "消费者",
-        "node": "节点",
-        "nodePlural": "节点",
-        "namespace": "虚拟主机",
-        "backlog": "待处理消息"
-      },
       "form": {
         "managementUrl": "管理 API 地址",
         "vhost": "虚拟主机",
@@ -484,16 +444,6 @@
     },
     "pulsar": {
       "name": "Pulsar",
-      "terms": {
-        "destination": "主题",
-        "destinationPlural": "主题",
-        "subscription": "订阅",
-        "subscriptionPlural": "订阅",
-        "node": "Broker",
-        "nodePlural": "Broker",
-        "namespace": "命名空间",
-        "backlog": "积压"
-      },
       "form": {
         "serviceUrl": "服务地址",
         "adminUrl": "管理 API",
@@ -517,16 +467,6 @@
       }
     },
     "redis-stream": {
-      "terms": {
-        "destination": "Stream",
-        "destinationPlural": "Stream",
-        "subscription": "消费组",
-        "subscriptionPlural": "消费组",
-        "node": "节点",
-        "nodePlural": "节点",
-        "namespace": "数据库",
-        "backlog": "堆积"
-      },
       "name": "Redis Stream",
       "form": {
         "deployment": "部署方式",
@@ -553,16 +493,6 @@
     },
     "mqtt": {
       "name": "MQTT",
-      "terms": {
-        "destination": "主题",
-        "destinationPlural": "主题",
-        "subscription": "订阅",
-        "subscriptionPlural": "订阅",
-        "node": "Broker",
-        "nodePlural": "Broker",
-        "namespace": "Broker",
-        "backlog": "排队消息"
-      },
       "degraded": {
         "sysRefused": "broker 拒绝了对它 $SYS 树的订阅。这是规则而不是故障——EMQX 默认就拒绝所有非本机客户端——所以有管理 API 时这些数字改从那里读。想读 $SYS，需要在 broker 的授权配置里放行这个订阅。",
         "sysSilent": "broker 接受了订阅，但根本不发布 $SYS 树。这没有什么可配置的：这个 broker 就是不上报自己的状态，依赖它的页面会保持空白。",
@@ -574,16 +504,6 @@
     },
     "nats": {
       "name": "NATS",
-      "terms": {
-        "destination": "流",
-        "destinationPlural": "流",
-        "subscription": "消费者",
-        "subscriptionPlural": "消费者",
-        "node": "服务器",
-        "nodePlural": "服务器",
-        "namespace": "账户",
-        "backlog": "待处理"
-      },
       "degraded": {
         "jetstreamDisabled": "这台服务器启动时没有开启 JetStream，不会存储任何消息：没有流、没有消费者，也没有可供查看的历史。给服务器加上 --jetstream 重启，或把这个连接指向已经开启的集群。",
         "jetstreamNoAccount": "服务器开了 JetStream，但当前账户无权使用。不用改服务器的启动方式——在配置里给这个账户加一行 jetstream，或改用已经有授权的账户连接。",
@@ -595,15 +515,6 @@
     },
     "activemq": {
       "name": "ActiveMQ",
-      "terms": {
-        "destination": "目的地",
-        "destinationPlural": "目的地",
-        "subscription": "订阅",
-        "subscriptionPlural": "订阅",
-        "node": "Broker",
-        "nodePlural": "Broker",
-        "backlog": "待处理"
-      },
       "form": {
         "console": "Web 控制台",
         "mechanism": "认证方式",
@@ -628,15 +539,6 @@
     },
     "nsq": {
       "name": "NSQ",
-      "terms": {
-        "destination": "主题",
-        "destinationPlural": "主题",
-        "subscription": "通道",
-        "subscriptionPlural": "通道",
-        "node": "nsqd",
-        "nodePlural": "nsqd",
-        "backlog": "堆积"
-      },
       "form": {
         "nsqd": "nsqd 地址",
         "lookupd": "nsqlookupd 地址"
@@ -647,11 +549,6 @@
     },
     "sqs": {
       "name": "Amazon SQS",
-      "terms": {
-        "destination": "队列",
-        "destinationPlural": "队列",
-        "backlog": "可见"
-      },
       "form": {
         "region": "AWS 区域",
         "accessKeyId": "Access Key ID",
@@ -666,13 +563,6 @@
     },
     "google-pubsub": {
       "name": "Google Pub/Sub",
-      "terms": {
-        "destination": "主题",
-        "destinationPlural": "主题",
-        "subscription": "订阅",
-        "subscriptionPlural": "订阅",
-        "backlog": "积压"
-      },
       "form": {
         "projectId": "Google Cloud 项目",
         "credentialsJson": "服务账号密钥",
@@ -688,13 +578,6 @@
     },
     "azure-servicebus": {
       "name": "Azure Service Bus",
-      "terms": {
-        "destination": "实体",
-        "destinationPlural": "队列与主题",
-        "subscription": "订阅",
-        "subscriptionPlural": "订阅",
-        "backlog": "待处理"
-      },
       "form": {
         "namespace": "命名空间",
         "keyName": "共享访问策略",
@@ -709,13 +592,6 @@
     },
     "kinesis": {
       "name": "Amazon Kinesis",
-      "terms": {
-        "destination": "流",
-        "destinationPlural": "流",
-        "subscription": "消费者",
-        "subscriptionPlural": "消费者",
-        "backlog": "记录"
-      },
       "form": {
         "region": "AWS 区域",
         "accessKeyId": "Access key ID",
@@ -733,13 +609,6 @@
     },
     "ibmmq": {
       "name": "IBM MQ",
-      "terms": {
-        "destination": "队列",
-        "destinationPlural": "队列",
-        "subscription": "订阅",
-        "subscriptionPlural": "订阅",
-        "backlog": "深度"
-      },
       "form": {
         "mqweb": "mqweb 服务器",
         "mechanism": "认证方式",
@@ -761,12 +630,6 @@
     },
     "solace": {
       "name": "Solace PubSub+",
-      "terms": {
-        "destination": "队列",
-        "destinationPlural": "队列",
-        "namespace": "Message VPN",
-        "backlog": "堆积"
-      },
       "form": {
         "semp": "SEMP 地址",
         "msgVpn": "Message VPN",

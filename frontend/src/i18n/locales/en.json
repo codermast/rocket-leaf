@@ -362,32 +362,12 @@
   },
   "mq": {
     "common": {
-      "terms": {
-        "destination": "Destination",
-        "destinationPlural": "Destinations",
-        "subscription": "Subscription",
-        "subscriptionPlural": "Subscriptions",
-        "node": "Node",
-        "nodePlural": "Nodes",
-        "namespace": "Namespace",
-        "backlog": "Backlog"
-      },
       "form": {
         "timeoutSec": "Timeout (seconds)",
         "authNone": "None"
       }
     },
     "rocketmq": {
-      "terms": {
-        "destination": "Topic",
-        "destinationPlural": "Topics",
-        "subscription": "Consumer group",
-        "subscriptionPlural": "Consumer groups",
-        "node": "Broker",
-        "nodePlural": "Brokers",
-        "namespace": "Cluster",
-        "backlog": "Lag"
-      },
       "name": "RocketMQ",
       "form": {
         "nameServer": "NameServer",
@@ -399,16 +379,6 @@
       }
     },
     "kafka": {
-      "terms": {
-        "destination": "Topic",
-        "destinationPlural": "Topics",
-        "subscription": "Consumer group",
-        "subscriptionPlural": "Consumer groups",
-        "node": "Broker",
-        "nodePlural": "Brokers",
-        "namespace": "Cluster",
-        "backlog": "Lag"
-      },
       "name": "Kafka",
       "form": {
         "bootstrapServers": "Bootstrap servers",
@@ -433,16 +403,6 @@
       }
     },
     "rabbitmq": {
-      "terms": {
-        "destination": "Queue",
-        "destinationPlural": "Queues",
-        "subscription": "Consumer",
-        "subscriptionPlural": "Consumers",
-        "node": "Node",
-        "nodePlural": "Nodes",
-        "namespace": "Virtual host",
-        "backlog": "Ready + unacked"
-      },
       "form": {
         "managementUrl": "Management API",
         "vhost": "Virtual host",
@@ -484,16 +444,6 @@
     },
     "pulsar": {
       "name": "Pulsar",
-      "terms": {
-        "destination": "Topic",
-        "destinationPlural": "Topics",
-        "subscription": "Subscription",
-        "subscriptionPlural": "Subscriptions",
-        "node": "Broker",
-        "nodePlural": "Brokers",
-        "namespace": "Namespace",
-        "backlog": "Backlog"
-      },
       "form": {
         "serviceUrl": "Service URL",
         "adminUrl": "Admin API",
@@ -517,16 +467,6 @@
       }
     },
     "redis-stream": {
-      "terms": {
-        "destination": "Stream",
-        "destinationPlural": "Streams",
-        "subscription": "Consumer group",
-        "subscriptionPlural": "Consumer groups",
-        "node": "Node",
-        "nodePlural": "Nodes",
-        "namespace": "Database",
-        "backlog": "Lag"
-      },
       "name": "Redis Stream",
       "form": {
         "deployment": "Deployment",
@@ -553,16 +493,6 @@
     },
     "mqtt": {
       "name": "MQTT",
-      "terms": {
-        "destination": "Topic",
-        "destinationPlural": "Topics",
-        "subscription": "Subscription",
-        "subscriptionPlural": "Subscriptions",
-        "node": "Broker",
-        "nodePlural": "Brokers",
-        "namespace": "Broker",
-        "backlog": "Queued"
-      },
       "degraded": {
         "sysRefused": "The broker refused a subscription to its $SYS tree. That is a rule rather than a fault — EMQX denies it to any client that is not local — so the figures come from its management API instead where there is one. To read $SYS, allow the subscription in the broker's authorisation.",
         "sysSilent": "The broker took the subscription and publishes no $SYS tree at all. There is nothing to configure: this broker simply does not report on itself, and the pages that would read it stay empty.",
@@ -574,16 +504,6 @@
     },
     "nats": {
       "name": "NATS",
-      "terms": {
-        "destination": "Stream",
-        "destinationPlural": "Streams",
-        "subscription": "Consumer",
-        "subscriptionPlural": "Consumers",
-        "node": "Server",
-        "nodePlural": "Servers",
-        "namespace": "Account",
-        "backlog": "Pending"
-      },
       "degraded": {
         "jetstreamDisabled": "This server was started without JetStream, so it stores nothing: there are no streams, no consumers and no message history to read. Start the server with --jetstream, or point this connection at one that already runs it.",
         "jetstreamNoAccount": "The server runs JetStream and this account may not use it. Nothing needs to change about how the server was started — add a jetstream block to the account in the server's configuration, or connect as one that already has one.",
@@ -595,15 +515,6 @@
     },
     "activemq": {
       "name": "ActiveMQ",
-      "terms": {
-        "destination": "Destination",
-        "destinationPlural": "Destinations",
-        "subscription": "Subscription",
-        "subscriptionPlural": "Subscriptions",
-        "node": "Broker",
-        "nodePlural": "Brokers",
-        "backlog": "Pending"
-      },
       "form": {
         "console": "Web console",
         "mechanism": "Authentication",
@@ -628,15 +539,6 @@
     },
     "nsq": {
       "name": "NSQ",
-      "terms": {
-        "destination": "Topic",
-        "destinationPlural": "Topics",
-        "subscription": "Channel",
-        "subscriptionPlural": "Channels",
-        "node": "nsqd",
-        "nodePlural": "nsqd",
-        "backlog": "Depth"
-      },
       "form": {
         "nsqd": "nsqd addresses",
         "lookupd": "nsqlookupd addresses"
@@ -647,11 +549,6 @@
     },
     "sqs": {
       "name": "Amazon SQS",
-      "terms": {
-        "destination": "Queue",
-        "destinationPlural": "Queues",
-        "backlog": "Visible"
-      },
       "form": {
         "region": "AWS region",
         "accessKeyId": "Access key ID",
@@ -666,13 +563,6 @@
     },
     "google-pubsub": {
       "name": "Google Pub/Sub",
-      "terms": {
-        "destination": "Topic",
-        "destinationPlural": "Topics",
-        "subscription": "Subscription",
-        "subscriptionPlural": "Subscriptions",
-        "backlog": "Backlog"
-      },
       "form": {
         "projectId": "Google Cloud project",
         "credentialsJson": "Service account key",
@@ -688,13 +578,6 @@
     },
     "azure-servicebus": {
       "name": "Azure Service Bus",
-      "terms": {
-        "destination": "Entity",
-        "destinationPlural": "Queues & topics",
-        "subscription": "Subscription",
-        "subscriptionPlural": "Subscriptions",
-        "backlog": "Active"
-      },
       "form": {
         "namespace": "Namespace",
         "keyName": "Shared access policy",
@@ -709,13 +592,6 @@
     },
     "kinesis": {
       "name": "Amazon Kinesis",
-      "terms": {
-        "destination": "Stream",
-        "destinationPlural": "Streams",
-        "subscription": "Consumer",
-        "subscriptionPlural": "Consumers",
-        "backlog": "Records"
-      },
       "form": {
         "region": "AWS region",
         "accessKeyId": "Access key ID",
@@ -733,13 +609,6 @@
     },
     "ibmmq": {
       "name": "IBM MQ",
-      "terms": {
-        "destination": "Queue",
-        "destinationPlural": "Queues",
-        "subscription": "Subscription",
-        "subscriptionPlural": "Subscriptions",
-        "backlog": "Depth"
-      },
       "form": {
         "mqweb": "mqweb server",
         "mechanism": "Authentication",
@@ -761,12 +630,6 @@
     },
     "solace": {
       "name": "Solace PubSub+",
-      "terms": {
-        "destination": "Queue",
-        "destinationPlural": "Queues",
-        "namespace": "Message VPN",
-        "backlog": "Spooled"
-      },
       "form": {
         "semp": "SEMP address",
         "msgVpn": "Message VPN",
