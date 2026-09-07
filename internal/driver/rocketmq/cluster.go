@@ -129,38 +129,3 @@ func nodeFromBroker(broker *model.BrokerNode) *model.Node {
 		},
 	}
 }
-
-// BrokerFromNode rebuilds the RocketMQ shape the current bridge still speaks.
-func BrokerFromNode(node *model.Node) *model.BrokerNode {
-	if node == nil {
-		return nil
-	}
-	return &model.BrokerNode{
-		ID:                    node.ID,
-		Cluster:               node.Cluster,
-		BrokerName:            node.Name,
-		BrokerID:              atoiOr(node.Attribute(AttrBrokerID), 0),
-		Role:                  model.BrokerRole(node.Attribute(AttrRole)),
-		Address:               node.Address,
-		HAAddress:             node.Attribute(AttrHAAddress),
-		Version:               node.Version,
-		Status:                node.Status,
-		Topics:                atoiOr(node.Attribute(AttrTopics), model.UnknownMetric),
-		Groups:                atoiOr(node.Attribute(AttrGroups), model.UnknownMetric),
-		TpsIn:                 node.RateIn,
-		TpsOut:                node.RateOut,
-		MsgInToday:            atoi64Or(node.Attribute(AttrMsgInToday), 0),
-		MsgOutToday:           atoi64Or(node.Attribute(AttrMsgOutToday), 0),
-		CommitLogDiskUsage:    node.DiskUsage,
-		ConsumeQueueDiskUsage: atoiOr(node.Attribute(AttrConsumeQueueDiskUsage), model.UnknownMetric),
-		LastUpdate:            node.LastSeen,
-		Remark:                node.Attribute(AttrRemark),
-	}
-}
-
-func atoi64Or(raw string, fallback int64) int64 {
-	if value, err := strconv.ParseInt(raw, 10, 64); err == nil {
-		return value
-	}
-	return fallback
-}

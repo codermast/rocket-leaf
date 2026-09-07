@@ -152,35 +152,6 @@ func (c *Conn) destinationFromTopic(topic *model.TopicItem) *model.Destination {
 	}
 }
 
-// TopicFromDestination rebuilds the RocketMQ shape the current bridge still
-// speaks. It disappears when the renderer moves onto the canonical model.
-func TopicFromDestination(destination *model.Destination) *model.TopicItem {
-	if destination == nil {
-		return nil
-	}
-	topic := &model.TopicItem{
-		ID:             destination.ID,
-		Topic:          destination.Ref.Name,
-		Cluster:        destination.Attribute(AttrCluster),
-		ReadQueue:      atoiOr(destination.Attribute(AttrReadQueue), model.UnknownMetric),
-		WriteQueue:     atoiOr(destination.Attribute(AttrWriteQueue), model.UnknownMetric),
-		Perm:           model.TopicPerm(destination.Attribute(AttrPerm)),
-		MessageType:    model.TopicMessageType(destination.Attribute(AttrMessageType)),
-		ConsumerGroups: atoiOr(destination.Attribute(AttrConsumerGroups), model.UnknownMetric),
-		TpsIn:          destination.RateIn,
-		TpsOut:         destination.RateOut,
-		LastUpdated:    destination.LastUpdated,
-		Description:    destination.Attribute(AttrDescription),
-	}
-	if encoded := destination.Attribute(AttrRoutes); encoded != "" {
-		var routes []model.TopicRouteItem
-		if json.Unmarshal([]byte(encoded), &routes) == nil {
-			topic.Routes = routes
-		}
-	}
-	return topic
-}
-
 func atoiOr(raw string, fallback int) int {
 	if value, err := strconv.Atoi(raw); err == nil {
 		return value

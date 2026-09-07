@@ -2,12 +2,6 @@ package rocketmq
 
 import "fmt"
 
-func parseIntSafe(value string) int {
-	var result int
-	fmt.Sscanf(value, "%d", &result)
-	return result
-}
-
 func parseInt64Safe(value string) int64 {
 	var result int64
 	fmt.Sscanf(value, "%d", &result)

@@ -3,9 +3,6 @@ package rocketmq
 import "testing"
 
 func TestParseHelpers(t *testing.T) {
-	if parseIntSafe("42x") != 42 {
-		t.Fatal("parseIntSafe")
-	}
 	if parseInt64Safe("100") != 100 {
 		t.Fatal("parseInt64Safe")
 	}
