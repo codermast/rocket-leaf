@@ -6,15 +6,11 @@
  * The deviations are `.m3`, which fills the window instead of the 1180x764
  * artboard frame, the two `.tb2` additions -- room for the native traffic
  * lights in place of the ones the canvas drew, and the window drag region --
- * `.tbi`, whose icons the canvas drew too small for a real window, the
- * `.side3` collapse, which the canvas drew no state for at all, `.t3.inset`,
- * which lines a full-width list table's outer columns up with the page gutter
- * rather than the canvas's own 14px cell padding, the breakpoints at the foot
- * of the file, which the canvas drew at one size only, the elastic `.srow`
- * label -- the settings page follows the shipped app's layout rather than
- * board 3g's single column, and its hints run long -- and the two blocks that
- * close the file: toasts, which the canvas has no transient state to draw, and
- * the motion switch they and everything else answer to.
+ * the `.side3` collapse, which the canvas drew no state for at all, the
+ * breakpoints at the foot of the file, which the canvas drew at one size only,
+ * and the two blocks that close the file: toasts, which the canvas has no
+ * transient state to draw, and the motion switch they and everything else
+ * answer to.
  */
 
 .m3 {
@@ -73,7 +69,6 @@
 
   /* text, darkest first */
   --c-fg: #171717;
-  --c-fg-hover: #2b2b2b;
   --c-fg-2: #525252;
   --c-mono-dim: #666;
   --c-muted: #8a8a8a;
@@ -142,7 +137,6 @@
    */
   --mo-fast: 0.12s;
   --mo-base: 0.18s;
-  --mo-slow: 0.26s;
   /* One full turn of the update icon, which is a gesture rather than a fade. */
   --mo-turn: 0.6s;
   /* Decelerating, so a panel arrives rather than stops. */
@@ -175,7 +169,6 @@
   --c-border-strong: #454545;
 
   --c-fg: #fafafa;
-  --c-fg-hover: #e5e5e5;
   --c-fg-2: #d4d4d4;
   --c-mono-dim: #a1a1a1;
   --c-muted: #8f8f8f;
@@ -317,8 +310,8 @@
 
 /*
  * Window buttons, off darwin only (see WindowControls). They act on the window
- * rather than on the app, so they sit past a divider and drop the `.tbi`
- * outline -- three more outlined squares would read as three more app buttons.
+ * rather than on the app, so they sit past a divider and carry no outline --
+ * three more outlined squares would read as three more app buttons.
  */
 .wcg {
   display: flex;
@@ -663,16 +656,10 @@
 .set3 {
   --set-title: 16px;
   --set-sub: 12.5px;
-  --set-group: 11.5px;
   --set-label: 13px;
   --set-hint: 12px;
   --set-control: 12.5px;
   --set-meta: 11.5px;
-}
-.set3 .sec3 {
-  font-size: var(--set-group);
-  /* .08em opens up a Latin run; a CJK one it merely pulls apart. */
-  letter-spacing: 0.05em;
 }
 .set3 [data-slot='setting-row'] {
   font-size: var(--set-label);
@@ -780,26 +767,12 @@ button.mqs-tab-home {
   cursor: default;
 }
 button.btn3:focus-visible,
-button.tbi:focus-visible,
 .ni:focus-visible,
 .mqs-tab:focus-visible,
 .mqs-tab-home:focus-visible {
   outline: 2px solid var(--c-fg);
   outline-offset: 1px;
 }
-input.in3,
-textarea.in3,
-select.in3 {
-  color: var(--c-fg);
-  font-family: inherit;
-  outline: none;
-}
-input.in3::placeholder,
-textarea.in3::placeholder { color: var(--c-muted); }
-input.in3:focus,
-textarea.in3:focus,
-select.in3:focus { border-color: var(--c-border-strong); }
-
 /* Scrollbars inside the shell stay thin so the chrome metrics hold. */
 /* `overscroll-behavior: contain` keeps a list that has hit its end from
    handing the gesture to the window behind it, which is what makes the whole
@@ -826,22 +799,11 @@ select.in3:focus { border-color: var(--c-border-strong); }
 /* Button resets, so nav/tab affordances can be real buttons without restyling. */
 button.ni,
 button.mqs-tab,
-button.mqs-menuitem,
 .ptile button {
   font: inherit;
   color: inherit;
   background: none;
   border: none;
-  text-align: left;
-  appearance: none;
-}
-/*
- * `.in3` as a button keeps its own 12px size — a `font: inherit` reset here
- * would pull it up to the 13px shell font and grow the control by 1.5px.
- */
-button.in3 {
-  font-family: inherit;
-  line-height: inherit;
   text-align: left;
   appearance: none;
 }
@@ -1350,7 +1312,6 @@ html[data-animations='off'] .mqs-toaster [data-sonner-toast] {
 :root[data-animations='off'] {
   --mo-fast: 0s;
   --mo-base: 0s;
-  --mo-slow: 0s;
   --mo-turn: 0s;
 }
 :root[data-animations='off'] *,
