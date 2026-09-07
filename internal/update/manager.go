@@ -607,9 +607,6 @@ func (m *Manager) fetch(
 	return "", failure
 }
 
-// checksumAssetName is what the release workflow attaches the digests as.
-const checksumAssetName = "SHA256SUMS.txt"
-
 // sweep removes abandoned packages from the download directory. The updater's
 // own memory lives here too and is not one of them: sweeping it away would
 // lose the skip list and the check throttle every time a download started.

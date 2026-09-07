@@ -54,8 +54,8 @@ function options(argv) {
 
 /**
  * Parses `shasum -a 256` output into name -> digest, accepting the `*` binary
- * marker and a `./` prefix. Kept in step with ParseChecksums in
- * internal/update/download.go, which reads the same file for manual verification.
+ * marker and a `./` prefix. This is the only reader of SHA256SUMS.txt: the app
+ * verifies against the digests inlined below, never the file itself.
  */
 function parseChecksums(content) {
   const sums = new Map();

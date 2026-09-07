@@ -30,57 +30,9 @@ const userAgent = "MQ-Studio"
 // hexSHA256 is the digest length the checksum file uses.
 const hexSHA256 = sha256.Size * 2
 
-// maxChecksumBytes caps the checksum file, which lists a dozen short lines.
-const maxChecksumBytes = 64 << 10
-
 // ErrChecksumMismatch reports a download whose content is not what the release
 // attested to. The partial file is removed before it is returned.
 var ErrChecksumMismatch = errors.New("downloaded file does not match its published checksum")
-
-// ParseChecksums reads `shasum -a 256` output into name -> digest. Names are
-// accepted with the `*` binary marker or a `./` prefix, both of which the
-// tooling that writes these files can emit.
-func ParseChecksums(content string) map[string]string {
-	sums := make(map[string]string)
-	for _, line := range strings.Split(content, "\n") {
-		fields := strings.Fields(line)
-		if len(fields) < 2 {
-			continue
-		}
-		digest := strings.ToLower(fields[0])
-		if len(digest) != hexSHA256 {
-			continue
-		}
-		if _, err := hex.DecodeString(digest); err != nil {
-			continue
-		}
-		name := strings.TrimPrefix(strings.TrimPrefix(fields[1], "*"), "./")
-		if name == "" {
-			continue
-		}
-		sums[name] = digest
-	}
-	return sums
-}
-
-// FetchChecksums downloads and parses a release's SHA256SUMS.txt.
-func FetchChecksums(ctx context.Context, client *http.Client, url string) (map[string]string, error) {
-	response, err := get(ctx, client, url)
-	if err != nil {
-		return nil, err
-	}
-	defer func() { _ = response.Body.Close() }()
-
-	content, err := io.ReadAll(io.LimitReader(response.Body, maxChecksumBytes))
-	if err != nil {
-		return nil, err
-	}
-	sums := ParseChecksums(string(content))
-	if len(sums) == 0 {
-		return nil, errors.New("the release checksum list is empty or unreadable")
-	}
-	return sums, nil
-}
 
 func get(ctx context.Context, client *http.Client, url string) (*http.Response, error) {
 	if client == nil {

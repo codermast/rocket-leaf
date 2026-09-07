@@ -90,7 +90,7 @@ func (r *release) manifest() Manifest {
 		PublishedAt: "2026-08-30T00:00:00Z",
 		ReleaseURL:  "https://github.com/amigoer/mq-studio/releases/tag/v" + r.version,
 		Notes:       "## What changed\n- everything",
-		Checksums:   "v" + r.version + "/" + checksumAssetName,
+		Checksums:   "v" + r.version + "/SHA256SUMS.txt",
 		Files: map[string]ManifestFile{
 			listed: {
 				Path:   "v" + r.version + "/" + name,
